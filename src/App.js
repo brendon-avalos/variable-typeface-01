@@ -1,6 +1,7 @@
 import React from "react";
 import "./styles.css";
 import p5 from "p5";
+import { Agentation } from "agentation";
 
 class App extends React.Component {
   constructor(props) {
@@ -11,10 +12,11 @@ class App extends React.Component {
       circleHeight: 20,
       shapeScale: 1,
       rotationAngle: 0,
-      shapeType: "circle",
-      cornerRadius: 10,
+      roundness: 50,
       letterSpacing: 5,
       inputText: "abc",
+      canvasFocused: false,
+      showCursor: true,
     };
   }
 
@@ -82,6 +84,11 @@ class App extends React.Component {
 
     p.setup = () => {
       p.createCanvas(p.windowWidth, p.windowHeight);
+
+      // Handle canvas click to focus
+      p.canvas.addEventListener('click', () => {
+        this.setState({ canvasFocused: true });
+      });
     };
 
     p.windowResized = () => {
@@ -94,10 +101,11 @@ class App extends React.Component {
         circleHeight,
         shapeScale,
         rotationAngle,
-        shapeType,
-        cornerRadius,
+        roundness,
         letterSpacing,
         inputText,
+        canvasFocused,
+        showCursor,
       } = this.state;
 
       const margin = 50;
@@ -105,7 +113,17 @@ class App extends React.Component {
       colSpacing = circleWidth + 5;
       rowSpacing = circleHeight + 5;
 
-      p.background(255);
+      // Background with focus indicator
+      if (canvasFocused) {
+        p.background(255);
+        // Draw a subtle border to indicate focus
+        p.noFill();
+        p.stroke(100, 150, 255);
+        p.strokeWeight(2);
+        p.rect(1, 1, p.width - 2, p.height - 2);
+      } else {
+        p.background(250);
+      }
 
       let xOffset = margin;
       let yOffset = margin;
@@ -137,82 +155,26 @@ class App extends React.Component {
               const scaledWidth = circleWidth * shapeScale;
               const scaledHeight = circleHeight * shapeScale;
 
-              if (shapeType === "circle") {
-                p.ellipse(0, 0, scaledWidth, scaledHeight);
-              } else if (shapeType === "rect") {
-                p.rectMode(p.CENTER);
-                p.rect(0, 0, scaledWidth, scaledHeight);
-              } else if (shapeType === "rounded-rect") {
-                p.rectMode(p.CENTER);
-                p.rect(0, 0, scaledWidth, scaledHeight, cornerRadius);
+              // Draw superellipse (Lamé curve) that morphs from rectangle to ellipse
+              // Use ease-out curve for smoother perceived changes
+              const normalizedRoundness = roundness / 100;
+              const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
+              const exponent = 2 + (1 - easedRoundness) * 48;
+
+              p.beginShape();
+              const steps = 100;
+              for (let i = 0; i <= steps; i++) {
+                const angle = (i / steps) * p.TWO_PI;
+                const cosT = Math.cos(angle);
+                const sinT = Math.sin(angle);
+
+                // Superellipse formula
+                const x = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
+                const y = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
+
+                p.vertex(x, y);
               }
-
-              p.pop();
-            }
-          }
-        }
-
-        xOffset += colSpacing * charWidth + letterSpacing;
-      }
-    };
-
-    p.exportSVG = () => {
-      const svgCanvas = p.createCanvas(p.width, p.height, p.SVG);
-
-      const {
-        circleWidth,
-        circleHeight,
-        shapeScale,
-        rotationAngle,
-        shapeType,
-        cornerRadius,
-        letterSpacing,
-        inputText,
-      } = this.state;
-
-      const margin = 50;
-      const colSpacing = circleWidth + 5;
-      const rowSpacing = circleHeight + 5;
-
-      let xOffset = margin;
-      let yOffset = margin;
-
-      for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
-        const char = inputText[charIndex];
-        const charGrid = this.fontData[char];
-        if (!charGrid) continue;
-
-        const charWidth = charGrid[0].length;
-
-        if (xOffset + colSpacing * charWidth > p.width - margin) {
-          xOffset = margin;
-          yOffset += rowSpacing * 8;
-        }
-
-        for (let row = 0; row < charGrid.length; row++) {
-          for (let col = 0; col < charGrid[row].length; col++) {
-            if (charGrid[row][col] === "1") {
-              p.push();
-              p.translate(
-                xOffset + col * colSpacing,
-                yOffset + row * rowSpacing
-              );
-              p.rotate(p.radians(rotationAngle));
-              p.noStroke();
-              p.fill(0);
-
-              const scaledWidth = circleWidth * shapeScale;
-              const scaledHeight = circleHeight * shapeScale;
-
-              if (shapeType === "circle") {
-                p.ellipse(0, 0, scaledWidth, scaledHeight);
-              } else if (shapeType === "rect") {
-                p.rectMode(p.CENTER);
-                p.rect(0, 0, scaledWidth, scaledHeight);
-              } else if (shapeType === "rounded-rect") {
-                p.rectMode(p.CENTER);
-                p.rect(0, 0, scaledWidth, scaledHeight, cornerRadius);
-              }
+              p.endShape(p.CLOSE);
 
               p.pop();
             }
@@ -222,17 +184,83 @@ class App extends React.Component {
         xOffset += colSpacing * charWidth + letterSpacing;
       }
 
-      p.save("shapes.svg");
-
-      // Delay the removal to ensure save is completed
-      setTimeout(() => {
-        p.remove();
-      }, 100);
+      // Draw blinking cursor if canvas is focused
+      if (canvasFocused && showCursor) {
+        const cursorX = xOffset;
+        const cursorY = yOffset;
+        p.stroke(0);
+        p.strokeWeight(2);
+        p.line(cursorX, cursorY, cursorX, cursorY + rowSpacing * 6);
+      }
     };
+
   };
 
   componentDidMount() {
     this.myP5 = new p5(this.Sketch, this.myRef.current);
+
+    // Add keyboard event listener for typing
+    window.addEventListener('keydown', this.handleKeyDown);
+
+    // Add click outside listener to blur canvas
+    window.addEventListener('click', this.handleClickOutside);
+
+    // Cursor blink interval
+    this.cursorInterval = setInterval(() => {
+      if (this.state.canvasFocused) {
+        this.setState({ showCursor: !this.state.showCursor });
+      }
+    }, 530);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('click', this.handleClickOutside);
+    if (this.cursorInterval) {
+      clearInterval(this.cursorInterval);
+    }
+  }
+
+  handleClickOutside = (e) => {
+    // Check if click is outside the canvas
+    if (this.myP5 && this.myP5.canvas && !this.myP5.canvas.contains(e.target)) {
+      this.setState({ canvasFocused: false, showCursor: true });
+    }
+  };
+
+  handleKeyDown = (e) => {
+    // Only handle keyboard input when canvas is focused
+    if (!this.state.canvasFocused) {
+      return;
+    }
+
+    // Ignore if typing in any input element, textarea, or contenteditable
+    if (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'SELECT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.isContentEditable ||
+      e.target.closest('[contenteditable="true"]')
+    ) {
+      return;
+    }
+
+    // Don't interfere with agentation elements
+    if (e.target.closest('[data-agentation]') || e.target.closest('.agentation')) {
+      return;
+    }
+
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      this.setState({ inputText: this.state.inputText.slice(0, -1), showCursor: true });
+    } else if (e.key === 'Escape') {
+      // Allow escape to blur the canvas
+      this.setState({ canvasFocused: false, showCursor: true });
+    } else if (e.key.length === 1) {
+      // Only add printable characters
+      e.preventDefault();
+      this.setState({ inputText: this.state.inputText + e.key, showCursor: true });
+    }
   }
 
   handleSliderChange = (property, value) => {
@@ -240,37 +268,108 @@ class App extends React.Component {
   };
 
   handleExport = () => {
-    this.myP5.exportSVG();
-  };
+    if (!this.state.inputText.trim()) {
+      return;
+    }
 
-  handleShapeTypeChange = (e) => {
-    this.setState({ shapeType: e.target.value });
+    const {
+      circleWidth,
+      circleHeight,
+      shapeScale,
+      rotationAngle,
+      roundness,
+      letterSpacing,
+      inputText,
+    } = this.state;
+
+    const margin = 50;
+    const colSpacing = circleWidth + 5;
+    const rowSpacing = circleHeight + 5;
+
+    let svgElements = [];
+    let xOffset = margin;
+    let yOffset = margin;
+    let maxX = 0;
+    let maxY = 0;
+
+    // Generate SVG elements for each character
+    for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
+      const char = inputText[charIndex];
+      const charGrid = this.fontData[char];
+      if (!charGrid) continue;
+
+      const charWidth = charGrid[0].length;
+      const canvasWidth = window.innerWidth;
+
+      if (xOffset + colSpacing * charWidth > canvasWidth - margin) {
+        xOffset = margin;
+        yOffset += rowSpacing * 8;
+      }
+
+      for (let row = 0; row < charGrid.length; row++) {
+        for (let col = 0; col < charGrid[row].length; col++) {
+          if (charGrid[row][col] === "1") {
+            const x = xOffset + col * colSpacing;
+            const y = yOffset + row * rowSpacing;
+            const scaledWidth = circleWidth * shapeScale;
+            const scaledHeight = circleHeight * shapeScale;
+
+            maxX = Math.max(maxX, x + scaledWidth);
+            maxY = Math.max(maxY, y + scaledHeight);
+
+            // Generate superellipse path with ease-out curve
+            const normalizedRoundness = roundness / 100;
+            const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
+            const exponent = 2 + (1 - easedRoundness) * 48;
+            const steps = 100;
+            let pathData = "";
+
+            for (let i = 0; i <= steps; i++) {
+              const angle = (i / steps) * Math.PI * 2;
+              const cosT = Math.cos(angle);
+              const sinT = Math.sin(angle);
+
+              const px = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
+              const py = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
+
+              pathData += i === 0 ? `M ${x + px} ${y + py}` : ` L ${x + px} ${y + py}`;
+            }
+            pathData += " Z";
+
+            const transform = rotationAngle !== 0 ? `transform="rotate(${rotationAngle} ${x} ${y})"` : "";
+            let shapeElement = `<path d="${pathData}" fill="black" ${transform}/>`;
+
+            svgElements.push(shapeElement);
+          }
+        }
+      }
+
+      xOffset += colSpacing * charWidth + letterSpacing;
+    }
+
+    // Create SVG string
+    const svgWidth = maxX + margin;
+    const svgHeight = maxY + margin;
+    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+  ${svgElements.join("\n  ")}
+</svg>`;
+
+    // Download SVG file
+    const blob = new Blob([svgContent], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "shapes.svg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   render() {
     return (
-      <div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>Type Text: </label>
-          <input
-            type="text"
-            value={this.state.inputText}
-            onChange={(e) => this.setState({ inputText: e.target.value })}
-          />
-        </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label>Shape Type: </label>
-          <select
-            value={this.state.shapeType}
-            onChange={this.handleShapeTypeChange}
-          >
-            <option value="circle">Oval</option>
-            <option value="rect">Rectangle</option>
-            <option value="rounded-rect">Rounded Rectangle</option>
-          </select>
-        </div>
-
+      <div className="App">
         {[
           { label: "Width", property: "circleWidth", min: 5, max: 50 },
           { label: "Height", property: "circleHeight", min: 5, max: 50 },
@@ -289,10 +388,10 @@ class App extends React.Component {
           },
           { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
           {
-            label: "Corner Radius",
-            property: "cornerRadius",
+            label: "Roundness",
+            property: "roundness",
             min: 0,
-            max: 50,
+            max: 100,
           },
         ].map(({ label, property, min, max, step = 1 }) => (
           <div key={property} style={{ marginBottom: "10px" }}>
@@ -321,11 +420,16 @@ class App extends React.Component {
           </div>
         ))}
 
-        <button onClick={this.handleExport} style={{ marginBottom: "10px" }}>
+        <button
+          onClick={this.handleExport}
+          disabled={!this.state.inputText.trim()}
+          style={{ marginBottom: "10px" }}
+        >
           Export as SVG
         </button>
 
         <div ref={this.myRef} />
+        {process.env.NODE_ENV === "development" && <Agentation />}
       </div>
     );
   }

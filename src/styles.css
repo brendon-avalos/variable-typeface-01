@@ -1,4 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
 .App {
-  font-family: sans-serif;
+  font-family: 'Roboto Mono', monospace;
   text-align: center;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.App > div {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Canvas element should be full width */
+canvas {
+  display: block;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scope all styles to only affect elements inside the main app container */
+.App label {
+  font-family: 'Roboto Mono', monospace;
+  color: #131313;
+  font-size: 12px;
+}
+
+/* Style all text inputs, selects, and number inputs inside App only */
+.App input[type="text"],
+.App input[type="number"],
+.App select {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #131313;
+  padding: 4px;
+  border: none;
+  background-color: #EEEEEE;
+}
+
+/* Style the export button inside App only */
+.App button {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background-color: #131313;
+  color: #FFFFFF;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.App button:hover {
+  opacity: 0.8;
+}
+
+.App button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Style range inputs (sliders) inside App only */
+.App input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 176px;
+  height: 2px;
+  background: #EEEEEE;
+  outline: none;
+}
+
+/* Webkit browsers (Chrome, Safari) */
+.App input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #131313;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+}
+
+/* Firefox */
+.App input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #131313;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+}
+
+/* Remove outline on focus */
+.App input[type="range"]:focus {
+  outline: none;
+}
+
+.App input[type="range"]:focus::-webkit-slider-thumb {
+  outline: none;
+}
+
+.App input[type="range"]:focus::-moz-range-thumb {
+  outline: none;
 }
