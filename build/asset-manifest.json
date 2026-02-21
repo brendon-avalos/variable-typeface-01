@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/static/css/main.9ece8bb8.css",
+    "main.js": "/static/js/main.2a8a69f7.js",
+    "static/media/Avenue-Mono.woff": "/static/media/Avenue-Mono.e1e8baea24aef2d8bd4c.woff",
+    "static/media/Avenue-Mono.woff2": "/static/media/Avenue-Mono.6b4f61200bed414a69e1.woff2",
+    "index.html": "/index.html",
+    "static/media/caret.svg": "/static/media/caret.398deb6ddf1752de62066e09b137a898.svg",
+    "main.9ece8bb8.css.map": "/static/css/main.9ece8bb8.css.map",
+    "main.2a8a69f7.js.map": "/static/js/main.2a8a69f7.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9ece8bb8.css",
+    "static/js/main.2a8a69f7.js"
+  ]
+}

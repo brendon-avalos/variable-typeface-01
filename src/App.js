@@ -1,7 +1,9 @@
 import React from "react";
 import "./styles.css";
-import p5 from "p5";
+import paper from "paper";
 import { Agentation } from "agentation";
+import caretIcon from "./icons/caret.svg";
+import { generateTTF, downloadTTF } from "./fontGenerator";
 
 class App extends React.Component {
   constructor(props) {
@@ -17,6 +19,9 @@ class App extends React.Component {
       inputText: "abc",
       canvasFocused: false,
       showCursor: true,
+      settingsPanelOpen: true,
+      foregroundColor: "#FFFFFF",
+      backgroundColor: "#000000",
     };
   }
 
@@ -79,125 +84,141 @@ class App extends React.Component {
     z: ["0000", "1111", "0010", "0100", "1111", "0000"],
   };
 
-  Sketch = (p) => {
-    let colSpacing, rowSpacing;
+  drawScene = () => {
+    const scope = this.paperScope;
+    if (!scope) return;
 
-    p.setup = () => {
-      p.createCanvas(p.windowWidth, p.windowHeight);
+    const {
+      circleWidth,
+      circleHeight,
+      shapeScale,
+      rotationAngle,
+      roundness,
+      letterSpacing,
+      inputText,
+      canvasFocused,
+      showCursor,
+      foregroundColor,
+      backgroundColor,
+    } = this.state;
 
-      // Handle canvas click to focus
-      p.canvas.addEventListener('click', () => {
-        this.setState({ canvasFocused: true });
-      });
-    };
+    // Clear everything
+    scope.project.activeLayer.removeChildren();
 
-    p.windowResized = () => {
-      p.resizeCanvas(p.windowWidth, p.windowHeight);
-    };
+    const viewWidth = scope.view.size.width;
+    const viewHeight = scope.view.size.height;
+    const margin = 50;
+    const colSpacing = circleWidth + 5;
+    const rowSpacing = circleHeight + 5;
 
-    p.draw = () => {
-      const {
-        circleWidth,
-        circleHeight,
-        shapeScale,
-        rotationAngle,
-        roundness,
-        letterSpacing,
-        inputText,
-        canvasFocused,
-        showCursor,
-      } = this.state;
+    // Background
+    const bg = new scope.Path.Rectangle(
+      new scope.Rectangle(0, 0, viewWidth, viewHeight)
+    );
+    bg.fillColor = backgroundColor;
 
-      const margin = 50;
+    // Draw focus indicator if canvas is focused
+    if (canvasFocused) {
+      const focusRect = new scope.Path.Rectangle(
+        new scope.Rectangle(1, 1, viewWidth - 2, viewHeight - 2)
+      );
+      focusRect.strokeColor = new scope.Color(100 / 255, 150 / 255, 255 / 255);
+      focusRect.strokeWidth = 2;
+    }
 
-      colSpacing = circleWidth + 5;
-      rowSpacing = circleHeight + 5;
+    let xOffset = margin;
+    let yOffset = margin;
 
-      // Background with focus indicator
-      if (canvasFocused) {
-        p.background(255);
-        // Draw a subtle border to indicate focus
-        p.noFill();
-        p.stroke(100, 150, 255);
-        p.strokeWeight(2);
-        p.rect(1, 1, p.width - 2, p.height - 2);
-      } else {
-        p.background(250);
+    // Precompute superellipse parameters
+    const normalizedRoundness = roundness / 100;
+    const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
+    const exponent = 2 + (1 - easedRoundness) * 48;
+    const scaledWidth = circleWidth * shapeScale;
+    const scaledHeight = circleHeight * shapeScale;
+    const steps = 100;
+
+    for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
+      const char = inputText[charIndex];
+      const charGrid = this.fontData[char];
+      if (!charGrid) continue;
+
+      const charWidth = charGrid[0].length;
+
+      if (xOffset + colSpacing * charWidth > viewWidth - margin) {
+        xOffset = margin;
+        yOffset += rowSpacing * 8;
       }
 
-      let xOffset = margin;
-      let yOffset = margin;
+      for (let row = 0; row < charGrid.length; row++) {
+        for (let col = 0; col < charGrid[row].length; col++) {
+          if (charGrid[row][col] === "1") {
+            const centerX = xOffset + col * colSpacing;
+            const centerY = yOffset + row * rowSpacing;
 
-      for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
-        const char = inputText[charIndex];
-        const charGrid = this.fontData[char];
-        if (!charGrid) continue;
+            // Draw superellipse (Lamé curve) that morphs from rectangle to ellipse
+            // Use ease-out curve for smoother perceived changes
+            const path = new scope.Path();
+            for (let i = 0; i <= steps; i++) {
+              const angle = (i / steps) * Math.PI * 2;
+              const cosT = Math.cos(angle);
+              const sinT = Math.sin(angle);
 
-        const charWidth = charGrid[0].length;
+              // Superellipse formula
+              const x = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
+              const y = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
 
-        if (xOffset + colSpacing * charWidth > p.width - margin) {
-          xOffset = margin;
-          yOffset += rowSpacing * 8;
-        }
+              path.add(new scope.Point(centerX + x, centerY + y));
+            }
+            path.closed = true;
+            path.fillColor = foregroundColor;
 
-        for (let row = 0; row < charGrid.length; row++) {
-          for (let col = 0; col < charGrid[row].length; col++) {
-            if (charGrid[row][col] === "1") {
-              p.push();
-              p.translate(
-                xOffset + col * colSpacing,
-                yOffset + row * rowSpacing
-              );
-              p.rotate(p.radians(rotationAngle));
-              p.noStroke();
-              p.fill(0);
-
-              const scaledWidth = circleWidth * shapeScale;
-              const scaledHeight = circleHeight * shapeScale;
-
-              // Draw superellipse (Lamé curve) that morphs from rectangle to ellipse
-              // Use ease-out curve for smoother perceived changes
-              const normalizedRoundness = roundness / 100;
-              const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
-              const exponent = 2 + (1 - easedRoundness) * 48;
-
-              p.beginShape();
-              const steps = 100;
-              for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * p.TWO_PI;
-                const cosT = Math.cos(angle);
-                const sinT = Math.sin(angle);
-
-                // Superellipse formula
-                const x = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
-                const y = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
-
-                p.vertex(x, y);
-              }
-              p.endShape(p.CLOSE);
-
-              p.pop();
+            if (rotationAngle !== 0) {
+              path.rotate(rotationAngle);
             }
           }
         }
-
-        xOffset += colSpacing * charWidth + letterSpacing;
       }
 
-      // Draw blinking cursor if canvas is focused
-      if (canvasFocused && showCursor) {
-        const cursorX = xOffset;
-        const cursorY = yOffset;
-        p.stroke(0);
-        p.strokeWeight(2);
-        p.line(cursorX, cursorY, cursorX, cursorY + rowSpacing * 6);
-      }
-    };
+      xOffset += colSpacing * charWidth + letterSpacing;
+    }
 
+    // Draw blinking cursor if canvas is focused
+    if (canvasFocused && showCursor) {
+      const cursorLine = new scope.Path.Line(
+        new scope.Point(xOffset, yOffset),
+        new scope.Point(xOffset, yOffset + rowSpacing * 6)
+      );
+      cursorLine.strokeColor = foregroundColor;
+      cursorLine.strokeWidth = 0.5;
+    }
   };
 
   componentDidMount() {
-    this.myP5 = new p5(this.Sketch, this.myRef.current);
+    // Create canvas and set up Paper.js with its own scope
+    const canvas = document.createElement('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    this.myRef.current.appendChild(canvas);
+    this.canvas = canvas;
+
+    this.paperScope = new paper.PaperScope();
+    this.paperScope.setup(canvas);
+
+    // Animation loop
+    this.paperScope.view.onFrame = () => this.drawScene();
+
+    // Handle window resize
+    this.handleResize = () => {
+      if (this.paperScope && this.paperScope.view) {
+        this.paperScope.view.viewSize = new this.paperScope.Size(window.innerWidth, window.innerHeight);
+      }
+    };
+    window.addEventListener('resize', this.handleResize);
+
+    // Handle canvas click to focus
+    canvas.addEventListener('click', () => {
+      this.setState({ canvasFocused: true });
+    });
 
     // Add keyboard event listener for typing
     window.addEventListener('keydown', this.handleKeyDown);
@@ -216,14 +237,18 @@ class App extends React.Component {
   componentWillUnmount() {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('click', this.handleClickOutside);
+    window.removeEventListener('resize', this.handleResize);
     if (this.cursorInterval) {
       clearInterval(this.cursorInterval);
+    }
+    if (this.paperScope && this.paperScope.view) {
+      this.paperScope.view.onFrame = null;
     }
   }
 
   handleClickOutside = (e) => {
     // Check if click is outside the canvas
-    if (this.myP5 && this.myP5.canvas && !this.myP5.canvas.contains(e.target)) {
+    if (this.canvas && !this.canvas.contains(e.target)) {
       this.setState({ canvasFocused: false, showCursor: true });
     }
   };
@@ -278,44 +303,26 @@ class App extends React.Component {
       shapeScale,
       rotationAngle,
       roundness,
-      letterSpacing,
-      inputText,
     } = this.state;
 
-    const margin = 50;
-    const colSpacing = circleWidth + 5;
-    const rowSpacing = circleHeight + 5;
+    // Collect paths for each character
+    const glyphData = {};
 
-    let svgElements = [];
-    let xOffset = margin;
-    let yOffset = margin;
-    let maxX = 0;
-    let maxY = 0;
-
-    // Generate SVG elements for each character
-    for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
-      const char = inputText[charIndex];
+    // Process each unique character in the font
+    Object.keys(this.fontData).forEach(char => {
       const charGrid = this.fontData[char];
-      if (!charGrid) continue;
+      if (!charGrid) return;
 
-      const charWidth = charGrid[0].length;
-      const canvasWidth = window.innerWidth;
-
-      if (xOffset + colSpacing * charWidth > canvasWidth - margin) {
-        xOffset = margin;
-        yOffset += rowSpacing * 8;
-      }
+      const paths = [];
 
       for (let row = 0; row < charGrid.length; row++) {
         for (let col = 0; col < charGrid[row].length; col++) {
           if (charGrid[row][col] === "1") {
-            const x = xOffset + col * colSpacing;
-            const y = yOffset + row * rowSpacing;
+            // Position relative to character origin
+            const x = col * (circleWidth + 5);
+            const y = row * (circleHeight + 5);
             const scaledWidth = circleWidth * shapeScale;
             const scaledHeight = circleHeight * shapeScale;
-
-            maxX = Math.max(maxX, x + scaledWidth);
-            maxY = Math.max(maxY, y + scaledHeight);
 
             // Generate superellipse path with ease-out curve
             const normalizedRoundness = roundness / 100;
@@ -336,99 +343,151 @@ class App extends React.Component {
             }
             pathData += " Z";
 
-            const transform = rotationAngle !== 0 ? `transform="rotate(${rotationAngle} ${x} ${y})"` : "";
-            let shapeElement = `<path d="${pathData}" fill="black" ${transform}/>`;
-
-            svgElements.push(shapeElement);
+            paths.push(pathData);
           }
         }
       }
 
-      xOffset += colSpacing * charWidth + letterSpacing;
+      if (paths.length > 0) {
+        glyphData[char] = paths;
+      }
+    });
+
+    try {
+      // Generate TTF font
+      const fontBuffer = generateTTF(glyphData, {
+        fontFamily: 'Variable Typeface',
+        fontStyle: 'Regular',
+        unitsPerEm: 1000,
+        ascender: 800,
+        descender: -200
+      });
+
+      // Download TTF file
+      downloadTTF(fontBuffer, 'variable-typeface.ttf');
+
+      console.log('Font generated successfully!');
+    } catch (error) {
+      console.error('Error generating font:', error);
+      alert('Error generating font. Check console for details.');
     }
+  };
 
-    // Create SVG string
-    const svgWidth = maxX + margin;
-    const svgHeight = maxY + margin;
-    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
-  ${svgElements.join("\n  ")}
-</svg>`;
+  toggleSettingsPanel = () => {
+    this.setState({ settingsPanelOpen: !this.state.settingsPanelOpen });
+  };
 
-    // Download SVG file
-    const blob = new Blob([svgContent], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "shapes.svg";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  handleColorChange = (colorType, value) => {
+    this.setState({ [colorType]: value });
   };
 
   render() {
+    const { settingsPanelOpen, foregroundColor, backgroundColor } = this.state;
+
     return (
       <div className="App">
-        {[
-          { label: "Width", property: "circleWidth", min: 5, max: 50 },
-          { label: "Height", property: "circleHeight", min: 5, max: 50 },
-          {
-            label: "Shape Size",
-            property: "shapeScale",
-            min: 0.5,
-            max: 3,
-            step: 0.1,
-          },
-          {
-            label: "Letter Spacing",
-            property: "letterSpacing",
-            min: 0,
-            max: 50,
-          },
-          { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
-          {
-            label: "Roundness",
-            property: "roundness",
-            min: 0,
-            max: 100,
-          },
-        ].map(({ label, property, min, max, step = 1 }) => (
-          <div key={property} style={{ marginBottom: "10px" }}>
-            <label>{label}: </label>
-            <input
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={this.state[property]}
-              onChange={(e) =>
-                this.handleSliderChange(property, parseFloat(e.target.value))
-              }
-            />
-            <input
-              type="number"
-              min={min}
-              max={max}
-              step={step}
-              value={this.state[property]}
-              onChange={(e) =>
-                this.handleSliderChange(property, parseFloat(e.target.value))
-              }
-              style={{ width: "60px", marginLeft: "10px" }}
-            />
-          </div>
-        ))}
-
-        <button
-          onClick={this.handleExport}
-          disabled={!this.state.inputText.trim()}
-          style={{ marginBottom: "10px" }}
-        >
-          Export as SVG
-        </button>
-
         <div ref={this.myRef} />
+
+        {/* Settings Panel */}
+        <div className="settings-panel" data-open={settingsPanelOpen}>
+          <div className="settings-content">
+            {/* Header */}
+            <div className="settings-header">
+              <span className="settings-title">Settings</span>
+              <button
+                className="collapse-button"
+                onClick={this.toggleSettingsPanel}
+                aria-label="Toggle settings"
+                style={{ transform: settingsPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <img src={caretIcon} alt="" width="12" height="12" />
+              </button>
+            </div>
+
+            {/* Settings List */}
+            <div className={`settings-body ${settingsPanelOpen ? 'open' : 'closed'}`}>
+              <div className="settings-list">
+                  {[
+                    { label: "Width", property: "circleWidth", min: 5, max: 50 },
+                    { label: "Height", property: "circleHeight", min: 5, max: 50 },
+                    { label: "Scale", property: "shapeScale", min: 0.5, max: 3, step: 0.1 },
+                    { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
+                    { label: "Roundness", property: "roundness", min: 0, max: 100 },
+                    { label: "Spacing", property: "letterSpacing", min: -50, max: 50 },
+                  ].map(({ label, property, min, max, step = 1 }) => {
+                    const value = this.state[property];
+                    const percentage = ((value - min) / (max - min));
+
+                    return (
+                      <div key={property} className="slider-container">
+                        <label className="slider-label">{label}</label>
+                        <div className="slider-wrapper">
+                          <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={step}
+                            value={value}
+                            onChange={(e) =>
+                              this.handleSliderChange(property, parseFloat(e.target.value))
+                            }
+                            className="custom-slider"
+                          />
+                          <div
+                            className="slider-value"
+                            style={{ left: `calc(${percentage * 100}% - ${percentage * 32 + 2}px)` }}
+                          >
+                            {Math.round(value)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Color Pickers */}
+                  <div className="color-section">
+                    <span className="color-label">Colors</span>
+                    <div className="color-inputs">
+                      <div className="color-input">
+                        <label>
+                          <span className="color-prefix">FG</span>
+                          <input
+                            type="color"
+                            value={foregroundColor}
+                            onChange={(e) => this.handleColorChange('foregroundColor', e.target.value)}
+                          />
+                          <span className="color-value">{foregroundColor}</span>
+                        </label>
+                        <div className="color-preview" style={{ backgroundColor: foregroundColor }} />
+                      </div>
+                      <div className="color-input">
+                        <label>
+                          <span className="color-prefix">BG</span>
+                          <input
+                            type="color"
+                            value={backgroundColor}
+                            onChange={(e) => this.handleColorChange('backgroundColor', e.target.value)}
+                          />
+                          <span className="color-value">{backgroundColor}</span>
+                        </label>
+                        <div className="color-preview" style={{ backgroundColor: backgroundColor }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Download Button */}
+                <button
+                  className="download-button"
+                  onClick={this.handleExport}
+                  disabled={!this.state.inputText.trim()}
+                >
+                  Download Font
+                </button>
+              </div>
+          </div>
+        </div>
+
         {process.env.NODE_ENV === "development" && <Agentation />}
       </div>
     );

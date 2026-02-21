@@ -1,4 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
+@font-face {
+  font-family: "Avenue Mono";
+  src:
+    url("../public/fonts/Avenue-Mono-Web/Avenue-Mono.woff2") format("woff2"),
+    url("../public/fonts/Avenue-Mono-Web/Avenue-Mono.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
 
 body {
   margin: 0;
@@ -14,17 +21,13 @@ body {
 }
 
 .App {
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Avenue Mono", monospace;
   text-align: center;
   margin: 0;
   padding: 0;
   width: 100%;
-}
-
-.App > div {
-  margin: 0;
-  padding: 0;
-  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Canvas element should be full width */
@@ -36,86 +39,249 @@ canvas {
   padding: 0;
 }
 
-/* Scope all styles to only affect elements inside the main app container */
-.App label {
-  font-family: 'Roboto Mono', monospace;
-  color: #131313;
-  font-size: 12px;
+/* Settings Panel */
+.settings-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #444;
+  border-radius: 16px;
+  padding: 8px 8px 8px 12px;
+  width: 280px;
+  z-index: 1000;
 }
 
-/* Style all text inputs, selects, and number inputs inside App only */
-.App input[type="text"],
-.App input[type="number"],
-.App select {
-  font-family: 'Roboto Mono', monospace;
-  font-size: 12px;
-  color: #131313;
-  padding: 4px;
-  border: none;
-  background-color: #EEEEEE;
+.settings-content {
+  display: flex;
+  flex-direction: column;
 }
 
-/* Style the export button inside App only */
-.App button {
-  font-family: 'Roboto Mono', monospace;
-  font-size: 12px;
-  background-color: #131313;
-  color: #FFFFFF;
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-title {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: white;
+  font-weight: normal;
+  margin: 0;
+}
+
+.collapse-button {
+  background: rgba(255, 255, 255, 0.1);
   border: none;
+  border-radius: 52px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   padding: 4px;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.collapse-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Settings Body Animation */
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+  transition:
+    max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.settings-body.open {
+  max-height: 800px;
+  opacity: 1;
+  margin-top: 0px;
+  padding-top: 24px;
+}
+
+.settings-body.closed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Settings List */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Slider Container */
+.slider-container {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-label {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: white;
+  margin: 0;
+  text-align: left;
+  opacity: 0.5;
+}
+
+.slider-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Custom Slider */
+.custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: #505050;
+  outline: none;
+  border-radius: 2px;
   cursor: pointer;
 }
 
-.App button:hover {
-  opacity: 0.8;
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 16px;
+  background: #505050;
+  cursor: pointer;
+  border-radius: 34px;
+  border: none;
+  margin-top: 0px;
 }
 
-.App button:disabled {
+.custom-slider::-moz-range-thumb {
+  width: 32px;
+  height: 16px;
+  background: #505050;
+  cursor: pointer;
+  border-radius: 34px;
+  border: none;
+}
+
+.slider-value {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: white;
+  width: 36px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  position: absolute;
+  top: -4px;
+  z-index: 10;
+}
+
+/* Color Section */
+.color-section {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-label {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: white;
+  margin: 0;
+  text-align: left;
+  opacity: 0.5;
+}
+
+.color-inputs {
+  display: flex;
+  gap: 5px;
+}
+
+.color-input {
+  background: #505050;
+  border-radius: 2px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 4px;
+}
+
+.color-input label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.color-prefix {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.color-input input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.color-value {
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  color: white;
+  text-transform: uppercase;
+}
+
+.color-preview {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* Download Button */
+.download-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 52px;
+  height: 36px;
+  font-family: "Avenue Mono", monospace;
+  font-size: 11px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.download-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
-}
-
-/* Style range inputs (sliders) inside App only */
-.App input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 176px;
-  height: 2px;
-  background: #EEEEEE;
-  outline: none;
-}
-
-/* Webkit browsers (Chrome, Safari) */
-.App input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  background: #131313;
-  cursor: pointer;
-  border-radius: 50%;
-  border: none;
-}
-
-/* Firefox */
-.App input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: #131313;
-  cursor: pointer;
-  border-radius: 50%;
-  border: none;
-}
-
-/* Remove outline on focus */
-.App input[type="range"]:focus {
-  outline: none;
-}
-
-.App input[type="range"]:focus::-webkit-slider-thumb {
-  outline: none;
-}
-
-.App input[type="range"]:focus::-moz-range-thumb {
-  outline: none;
 }

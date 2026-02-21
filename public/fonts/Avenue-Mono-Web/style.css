@@ -1,0 +1,19 @@
+/**
+ *
+ * Font information
+ * Family: Avenue Mono
+ * Style: Regular
+ * Designer: Samuel Hughes
+ * Font URL: https://boulevardlab.com/
+ *
+ *
+ */
+
+@font-face {
+  font-family: 'avenue-mono-regular';
+  src: url('avenue-mono-regular-webfont.woff2') format('woff2'),
+    url('avenue-mono-regular-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+

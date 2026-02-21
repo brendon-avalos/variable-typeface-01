@@ -1,0 +1,33 @@
+Copyright (c) 2020, Boulevard LAB (boulevardlab.com)
+
+Webfonts for Self Hosting - End User License Agreement (EULA)
+
+VERSION 1.1
+
+As used herein, “Font Software” means coded and encrypted Software that generates typeface designs when used with the appropriate hardware and software. Boulevard LAB grants you a non-exclusive license to use the Software and Documentation, provided that you agree to the following:
+
+RIGHTS
+
+Boulevard LAB reserves all rights to intellectual property contained within. Rights written, common law rights, unwritten and the possible evolution of future rights yet to be invented and/or rights for uses in yet to be invented technologies are all reserved by Boulevard LAB. Upon purchase Boulevard LAB grants you (The Licensee) a non-exclusive license to use the font software within the terms, conditions and restrictions of this agreement.
+
+By purchasing and/or installing Boulevard LAB Fonts software you agree to the following terms:
+
+A web license for a Boulevard LAB font gives you the right to use that font on one (1) web domain with up to 10k MUV (Monthly Unique Visitors). If your usage exceeds that limit multiple licenses needs to be purchased. A web license is perpetual. Boulevard LAB Webfonts are licensed and priced according to monthly unique visitors. You must monitor your domain’s unique visitors with regards to this License. If your unique visitors exceed the one stated on your receipt/invoice, you are required to extend your License accordingly.
+
+Except as permitted herein, you may not rename, modify, adapt, translate, reverse engineer, decompile, disassemble, alter or otherwise copy the Boulevard LAB Font Software.
+
+You are permitted to make a single back-up copy. The Boulevard LAB Font Software or documentation may not be sublicensed, sold, leased, rented, lent, or given away to another person or entity.
+
+All purchases of Boulevard LAB font software are final, we do not refund money on font license purchases. The Boulevard LAB Font Software may be returned or exchanged only if defective. Defective software will be replaced when accompanied by a valid sales receipt and Boulevard LAB is notified within one (1) week of purchase.
+
+You agree that any derivative works created by you from the Boulevard LAB Font Software, including, but not limited to, software or other electronic works, are considered derivative works and use of the derivative work is subject to the terms and conditions of this License Agreement. Derivative works may not be sublicensed, sold, leased, rented, lent, or given away without written permission from Boulevard LAB. Boulevard LAB shall not be responsible for unauthorized, modified and/or regenerated software or derivative works.
+
+Embedding of the Boulevard LAB Font Software into documents is only permitted in a secured read/print- only mode and as long as the document itself is not a commercial product. If you need to embed Boulevard LAB font software that will not be in secured read/print-only environment and/or as the document itself is a commercial product, you must notify Boulevard LAB to purchase an additional license.
+
+The Boulevard LAB Font Software is protected under domestic and international trademark and copyright law.
+
+Any breach of the terms of this Agreement shall be cause for termination. In the event of termination, and without limitation of any remedies under law and equity, you agree to immediately return the Font Software to Boulevard LAB and certify that no copy remains in your possession or control.
+
+Boulevard LAB makes no warranties, express or implied as to merchantability, fitness for a particular purpose, or otherwise. without limiting the foregoing, Boulevard LAB shall in no event be liable to the licensed user or any other third party for any direct, indirect, consequential, or incidental damages, including damages from loss of business profits, business interruption, loss of business information, arising out of the use or inability to use the product even if notified in advance. Under no circumstances shall Boulevard LAB’s liability exceed the replacement cost of the software.
+
+Boulevard LAB reserves the right to modify this license at any time without notice. However, it will not restrict your previously purchased rights within the license. Should a regulation of this contract be invalid in whole or part, the validity of other regulations shall remain unaffected.
