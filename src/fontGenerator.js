@@ -1,6 +1,60 @@
 import opentype from 'opentype.js';
 import { mergeShapePaths, pathToFontUnits, calculatePathBounds } from './pathUtils';
 
+/** PostScript name length limit for broad installer compatibility */
+const MAX_POSTSCRIPT_NAME_LEN = 63;
+
+/**
+ * Builds unique font names from UI settings so each export installs as its own family.
+ * @param {object} settings - Same shape as App export state (width, height, scale, colors, etc.)
+ * @returns {{ fontFamily: string, fullName: string, postScriptName: string, filename: string }}
+ */
+export function buildFontNamesFromSettings(settings) {
+  const {
+    circleWidth,
+    circleHeight,
+    shapeScale,
+    rotationAngle,
+    roundness,
+    letterSpacing,
+    foregroundColor,
+    backgroundColor,
+  } = settings;
+
+  const W = Math.round(circleWidth);
+  const H = Math.round(circleHeight);
+  const S = Math.round(Number(shapeScale) * 10);
+  const scaleDisplay = Number(Number(shapeScale).toFixed(1));
+  const R = Math.round(rotationAngle);
+  const Rn = Math.round(roundness);
+  const Sp = Math.round(letterSpacing);
+  const spSeg = Sp < 0 ? `n${Math.abs(Sp)}` : String(Sp);
+
+  const fg = String(foregroundColor).replace(/^#/, '').toUpperCase();
+  const bg = String(backgroundColor).replace(/^#/, '').toUpperCase();
+
+  const fontFamily = `Variable Typeface W${W} H${H} S${scaleDisplay} R${R} Rn${Rn} Sp${Sp} FG#${fg} BG#${bg}`;
+  const styleName = 'Regular';
+  const fullName = `${fontFamily} ${styleName}`;
+
+  let postScriptName =
+    `VariableTypeface-W${W}-H${H}-S${S}-R${R}-Rn${Rn}-Sp${spSeg}-${fg}-${bg}`;
+
+  if (postScriptName.length > MAX_POSTSCRIPT_NAME_LEN) {
+    let h = 0;
+    for (let i = 0; i < postScriptName.length; i++) {
+      h = (h * 31 + postScriptName.charCodeAt(i)) >>> 0;
+    }
+    const short = (h >>> 0).toString(16).padStart(8, '0');
+    postScriptName = `VarTypeface-${short}`;
+  }
+
+  const filenameBase = postScriptName.replace(/[^a-zA-Z0-9-]+/g, '-').toLowerCase();
+  const filename = `${filenameBase}.ttf`;
+
+  return { fontFamily, fullName, postScriptName, styleName, filename };
+}
+
 /**
  * Generates a TTF font file from glyph data
  * @param {object} glyphData - Object mapping characters to their path arrays
@@ -11,6 +65,8 @@ export function generateTTF(glyphData, options = {}) {
   const {
     fontFamily = 'Variable Typeface',
     fontStyle = 'Regular',
+    fullName,
+    postScriptName,
     unitsPerEm = 1000,
     ascender = 800,
     descender = -200
@@ -96,14 +152,18 @@ export function generateTTF(glyphData, options = {}) {
   });
 
   // Create font
-  const font = new opentype.Font({
+  const fontOptions = {
     familyName: fontFamily,
     styleName: fontStyle,
     unitsPerEm: unitsPerEm,
     ascender: ascender,
     descender: descender,
     glyphs: glyphs
-  });
+  };
+  if (fullName) fontOptions.fullName = fullName;
+  if (postScriptName) fontOptions.postScriptName = postScriptName;
+
+  const font = new opentype.Font(fontOptions);
 
   // Generate TTF as ArrayBuffer
   return font.toArrayBuffer();

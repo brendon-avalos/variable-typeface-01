@@ -2,7 +2,7 @@ import React from "react";
 import "./styles.css";
 import paper from "paper";
 import caretIcon from "./icons/caret.svg";
-import { generateTTF, downloadTTF } from "./fontGenerator";
+import { buildFontNamesFromSettings, generateTTF, downloadTTF } from "./fontGenerator";
 
 class App extends React.Component {
   constructor(props) {
@@ -297,7 +297,21 @@ class App extends React.Component {
       shapeScale,
       rotationAngle,
       roundness,
+      letterSpacing,
+      foregroundColor,
+      backgroundColor,
     } = this.state;
+
+    const naming = buildFontNamesFromSettings({
+      circleWidth,
+      circleHeight,
+      shapeScale,
+      rotationAngle,
+      roundness,
+      letterSpacing,
+      foregroundColor,
+      backgroundColor,
+    });
 
     // Collect paths for each character
     const glyphData = {};
@@ -350,15 +364,16 @@ class App extends React.Component {
     try {
       // Generate TTF font
       const fontBuffer = generateTTF(glyphData, {
-        fontFamily: 'Variable Typeface',
-        fontStyle: 'Regular',
+        fontFamily: naming.fontFamily,
+        fontStyle: naming.styleName,
+        fullName: naming.fullName,
+        postScriptName: naming.postScriptName,
         unitsPerEm: 1000,
         ascender: 800,
         descender: -200
       });
 
-      // Download TTF file
-      downloadTTF(fontBuffer, 'variable-typeface.ttf');
+      downloadTTF(fontBuffer, naming.filename);
 
       console.log('Font generated successfully!');
     } catch (error) {
