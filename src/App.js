@@ -1,7 +1,6 @@
 import React from "react";
 import "./styles.css";
 import paper from "paper";
-import { Agentation } from "agentation";
 import caretIcon from "./icons/caret.svg";
 import { generateTTF, downloadTTF } from "./fontGenerator";
 
@@ -270,11 +269,6 @@ class App extends React.Component {
       return;
     }
 
-    // Don't interfere with agentation elements
-    if (e.target.closest('[data-agentation]') || e.target.closest('.agentation')) {
-      return;
-    }
-
     if (e.key === 'Backspace') {
       e.preventDefault();
       this.setState({ inputText: this.state.inputText.slice(0, -1), showCursor: true });
@@ -398,15 +392,17 @@ class App extends React.Component {
                 className="collapse-button"
                 onClick={this.toggleSettingsPanel}
                 aria-label="Toggle settings"
+                aria-expanded={settingsPanelOpen}
                 style={{ transform: settingsPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
               >
                 <img src={caretIcon} alt="" width="12" height="12" />
               </button>
             </div>
 
-            {/* Settings List */}
+            {/* Settings list (height via CSS grid 0fr/1fr) */}
             <div className={`settings-body ${settingsPanelOpen ? 'open' : 'closed'}`}>
-              <div className="settings-list">
+              <div className="settings-body-inner">
+                <div className="settings-list">
                   {[
                     { label: "Width", property: "circleWidth", min: 5, max: 50 },
                     { label: "Height", property: "circleHeight", min: 5, max: 50 },
@@ -444,39 +440,38 @@ class App extends React.Component {
                     );
                   })}
 
-                  {/* Color Pickers */}
-                  <div className="color-section">
-                    <span className="color-label">Colors</span>
-                    <div className="color-inputs">
-                      <div className="color-input">
-                        <label>
-                          <span className="color-prefix">FG</span>
-                          <input
-                            type="color"
-                            value={foregroundColor}
-                            onChange={(e) => this.handleColorChange('foregroundColor', e.target.value)}
-                          />
-                          <span className="color-value">{foregroundColor}</span>
-                        </label>
-                        <div className="color-preview" style={{ backgroundColor: foregroundColor }} />
-                      </div>
-                      <div className="color-input">
-                        <label>
-                          <span className="color-prefix">BG</span>
-                          <input
-                            type="color"
-                            value={backgroundColor}
-                            onChange={(e) => this.handleColorChange('backgroundColor', e.target.value)}
-                          />
-                          <span className="color-value">{backgroundColor}</span>
-                        </label>
-                        <div className="color-preview" style={{ backgroundColor: backgroundColor }} />
-                      </div>
+                {/* Color Pickers */}
+                <div className="color-section">
+                  <span className="color-label">Colors</span>
+                  <div className="color-inputs">
+                    <div className="color-input">
+                      <label>
+                        <span className="color-prefix">FG</span>
+                        <input
+                          type="color"
+                          value={foregroundColor}
+                          onChange={(e) => this.handleColorChange('foregroundColor', e.target.value)}
+                        />
+                        <span className="color-value">{foregroundColor}</span>
+                      </label>
+                      <div className="color-preview" style={{ backgroundColor: foregroundColor }} />
+                    </div>
+                    <div className="color-input">
+                      <label>
+                        <span className="color-prefix">BG</span>
+                        <input
+                          type="color"
+                          value={backgroundColor}
+                          onChange={(e) => this.handleColorChange('backgroundColor', e.target.value)}
+                        />
+                        <span className="color-value">{backgroundColor}</span>
+                      </label>
+                      <div className="color-preview" style={{ backgroundColor: backgroundColor }} />
                     </div>
                   </div>
                 </div>
+                </div>
 
-                {/* Download Button */}
                 <button
                   className="download-button"
                   onClick={this.handleExport}
@@ -485,10 +480,10 @@ class App extends React.Component {
                   Download Font
                 </button>
               </div>
+            </div>
           </div>
         </div>
 
-        {process.env.NODE_ENV === "development" && <Agentation />}
       </div>
     );
   }

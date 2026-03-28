@@ -82,38 +82,49 @@ canvas {
   justify-content: center;
   cursor: pointer;
   padding: 4px;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .collapse-button:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Settings Body Animation */
+/* Settings body: animate intrinsic height via grid rows (smooth vs. max-height) */
 .settings-body {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  overflow: hidden;
-  transition:
-    max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    margin-top 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    padding-top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.42s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .settings-body.open {
-  max-height: 800px;
-  opacity: 1;
-  margin-top: 0px;
-  padding-top: 24px;
+  grid-template-rows: 1fr;
 }
 
 .settings-body.closed {
-  max-height: 0;
-  opacity: 0;
-  margin-top: 0;
-  padding-top: 0;
+  grid-template-rows: 0fr;
+}
+
+.settings-body-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 24px;
+}
+
+.settings-body:not(.open) .settings-body-inner {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-body {
+    transition: none;
+  }
+
+  .collapse-button {
+    transition: none;
+  }
 }
 
 /* Settings List */
