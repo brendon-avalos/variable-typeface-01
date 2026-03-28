@@ -39,28 +39,49 @@ canvas {
   padding: 0;
 }
 
-/* Settings Panel */
+/* Settings Panel — pinned to viewport top-right; only height changes, not position */
 .settings-panel {
   position: fixed;
   top: 20px;
   right: 20px;
+  left: auto;
+  bottom: auto;
+  margin: 0;
   background: #444;
   border-radius: 16px;
   padding: 8px 8px 8px 12px;
   width: 280px;
+  max-width: calc(100vw - 40px);
   z-index: 1000;
+  box-sizing: border-box;
 }
 
+/*
+ * Row 1 = header only (auto height, never grows with row 2). Row 2 = collapsible body.
+ * align-content: start keeps rows packed to the top so the title bar does not shift vertically.
+ */
 .settings-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 0fr;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-items: stretch;
+  /* Same duration + curve as .settings-body-inner on close = one continuous motion */
+  transition: grid-template-rows 0.34s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.settings-panel[data-open="true"] .settings-content {
+  grid-template-rows: auto 1fr;
 }
 
 .settings-header {
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .settings-title {
@@ -82,26 +103,18 @@ canvas {
   justify-content: center;
   cursor: pointer;
   padding: 4px;
-  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.34s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .collapse-button:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Settings body: animate intrinsic height via grid rows (smooth vs. max-height) */
+/* Row 2: clips region. Open = shell expands then inner (delayed). Close = grid + fade + lift in parallel. */
 .settings-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.42s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.settings-body.open {
-  grid-template-rows: 1fr;
-}
-
-.settings-body.closed {
-  grid-template-rows: 0fr;
+  grid-row: 2;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .settings-body-inner {
@@ -109,17 +122,58 @@ canvas {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding-top: 24px;
+  gap: 16px;
+  padding-top: 8px;
 }
 
-.settings-body:not(.open) .settings-body-inner {
+.settings-body.open .settings-body-inner {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition:
+    opacity 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0.1s,
+    transform 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0.08s,
+    visibility 0s;
+}
+
+.settings-body.closed .settings-body-inner {
+  opacity: 0;
+  transform: translateY(-6px);
   pointer-events: none;
+  transition:
+    opacity 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0s,
+    transform 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0s,
+    visibility 0s linear 0.32s;
+  visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .settings-body {
+  .settings-content {
     transition: none;
+  }
+
+  .settings-body.open .settings-body-inner,
+  .settings-body.closed .settings-body-inner {
+    transition: none;
+    transform: none;
+  }
+
+  .settings-body.open .settings-body-inner {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .settings-body.closed .settings-body-inner {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .settings-panel[data-open="true"] .settings-content {
+    grid-template-rows: auto 1fr;
+  }
+
+  .settings-panel[data-open="false"] .settings-content {
+    grid-template-rows: auto 0fr;
   }
 
   .collapse-button {
@@ -206,8 +260,7 @@ canvas {
 
 /* Color Section */
 .color-section {
-  display: grid;
-  grid-template-columns: 80px 1fr;
+  display: flex;
   align-items: center;
   gap: 12px;
 }
@@ -219,11 +272,16 @@ canvas {
   margin: 0;
   text-align: left;
   opacity: 0.5;
+  width: 56px;
+  flex-shrink: 0;
 }
 
 .color-inputs {
   display: flex;
   gap: 5px;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .color-input {
@@ -232,9 +290,10 @@ canvas {
   padding: 2px 4px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex: 1;
   gap: 4px;
+  width: 100%;
 }
 
 .color-input label {
