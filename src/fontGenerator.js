@@ -6,7 +6,7 @@ const MAX_POSTSCRIPT_NAME_LEN = 63;
 
 /**
  * Builds unique font names from UI settings so each export installs as its own family.
- * @param {object} settings - Same shape as App export state (width, height, scale, colors, etc.)
+ * @param {object} settings - Export-relevant geometry (width, height, scale, rotation, roundness, spacing)
  * @returns {{ fontFamily: string, fullName: string, postScriptName: string, filename: string }}
  */
 export function buildFontNamesFromSettings(settings) {
@@ -17,8 +17,6 @@ export function buildFontNamesFromSettings(settings) {
     rotationAngle,
     roundness,
     letterSpacing,
-    foregroundColor,
-    backgroundColor,
   } = settings;
 
   const W = Math.round(circleWidth);
@@ -30,15 +28,12 @@ export function buildFontNamesFromSettings(settings) {
   const Sp = Math.round(letterSpacing);
   const spSeg = Sp < 0 ? `n${Math.abs(Sp)}` : String(Sp);
 
-  const fg = String(foregroundColor).replace(/^#/, '').toUpperCase();
-  const bg = String(backgroundColor).replace(/^#/, '').toUpperCase();
-
-  const fontFamily = `Variable Typeface W${W} H${H} S${scaleDisplay} R${R} Rn${Rn} Sp${Sp} FG#${fg} BG#${bg}`;
+  const fontFamily = `Variable Typeface W${W} H${H} S${scaleDisplay} R${R} Rn${Rn} Sp${Sp}`;
   const styleName = 'Regular';
   const fullName = `${fontFamily} ${styleName}`;
 
   let postScriptName =
-    `VariableTypeface-W${W}-H${H}-S${S}-R${R}-Rn${Rn}-Sp${spSeg}-${fg}-${bg}`;
+    `VariableTypeface-W${W}-H${H}-S${S}-R${R}-Rn${Rn}-Sp${spSeg}`;
 
   if (postScriptName.length > MAX_POSTSCRIPT_NAME_LEN) {
     let h = 0;
@@ -57,7 +52,7 @@ export function buildFontNamesFromSettings(settings) {
 
 /**
  * Generates a TTF font file from glyph data
- * @param {object} glyphData - Object mapping characters to their path arrays
+ * @param {object} glyphData - Map of char → path string[] **or** `{ paths, layoutWidth, layoutHeight }` (grid em-box, matches preview)
  * @param {object} options - Font options (name, family, style, etc.)
  * @returns {ArrayBuffer} - TTF font file as ArrayBuffer
  */
@@ -69,8 +64,14 @@ export function generateTTF(glyphData, options = {}) {
     postScriptName,
     unitsPerEm = 1000,
     ascender = 800,
-    descender = -200
+    descender = 0,
+    roundness = 0
   } = options;
+
+  // Round dots are already smooth cubics; skip simplify so Paper does not distort them.
+  // Rectilinear (roundness 0) still benefits from simplify.
+  const mergeOpts =
+    roundness > 0 ? { simplifyTolerance: null } : { simplifyTolerance: 0.5 };
 
   // Create notdef glyph (required for all fonts)
   const notdefGlyph = new opentype.Glyph({
@@ -91,9 +92,14 @@ export function generateTTF(glyphData, options = {}) {
   // Start with notdef and space
   const glyphs = [notdefGlyph, spaceGlyph];
 
+  const sideBearing = 50;
+
   // Process each character
   Object.keys(glyphData).forEach(char => {
-    const pathStrings = glyphData[char];
+    const entry = glyphData[char];
+    const pathStrings = Array.isArray(entry) ? entry : entry?.paths;
+    const layoutWidth = Array.isArray(entry) ? null : entry?.layoutWidth;
+    const layoutHeight = Array.isArray(entry) ? null : entry?.layoutHeight;
 
     if (!pathStrings || pathStrings.length === 0) {
       console.warn(`No paths found for character: ${char}`);
@@ -102,17 +108,26 @@ export function generateTTF(glyphData, options = {}) {
 
     try {
       // Merge all paths for this character
-      const mergedPath = mergeShapePaths(pathStrings);
+      const mergedPath = mergeShapePaths(pathStrings, mergeOpts);
 
-      // Calculate bounds for the merged path
+      // Calculate bounds for the merged path (tight ink; X snap only when using layout export)
       const bounds = calculatePathBounds([mergedPath]);
 
-      // Compute scale factor (same formula used in pathToFontUnits)
-      const maxDimension = Math.max(bounds.width, bounds.height);
-      const fontScale = ascender / maxDimension;
+      const useLayout =
+        layoutWidth != null &&
+        layoutHeight != null &&
+        layoutWidth > 0 &&
+        layoutHeight > 0;
 
-      // Convert to font units
-      const commands = pathToFontUnits(mergedPath, unitsPerEm, bounds, ascender);
+      const fontScale = useLayout ? ascender / layoutHeight : ascender / Math.max(bounds.width, bounds.height);
+
+      const commands = pathToFontUnits(
+        mergedPath,
+        unitsPerEm,
+        bounds,
+        ascender,
+        useLayout ? { layoutHeight } : null
+      );
 
       // Create opentype.js path
       const glyphPath = new opentype.Path();
@@ -137,11 +152,14 @@ export function generateTTF(glyphData, options = {}) {
         }
       });
 
-      // Create glyph
+      const advanceWidth = useLayout
+        ? Math.round(layoutWidth * fontScale) + sideBearing
+        : Math.round(bounds.width * fontScale) + sideBearing;
+
       const glyph = new opentype.Glyph({
         name: getGlyphName(char),
         unicode: char.charCodeAt(0),
-        advanceWidth: Math.round(bounds.width * fontScale) + 50, // Add some spacing
+        advanceWidth,
         path: glyphPath
       });
 

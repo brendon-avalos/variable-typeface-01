@@ -3,6 +3,8 @@ import "./styles.css";
 import paper from "paper";
 import caretIcon from "./icons/caret.svg";
 import { buildFontNamesFromSettings, generateTTF, downloadTTF } from "./fontGenerator";
+import { buildDotPathD } from "./pathUtils";
+import { SettingsSlider } from "./SettingsSlider";
 
 class App extends React.Component {
   constructor(props) {
@@ -21,6 +23,8 @@ class App extends React.Component {
       settingsPanelOpen: true,
       foregroundColor: "#FFFFFF",
       backgroundColor: "#000000",
+      hexEditFg: null,
+      hexEditBg: null,
     };
   }
 
@@ -128,13 +132,8 @@ class App extends React.Component {
     let xOffset = margin;
     let yOffset = margin;
 
-    // Precompute superellipse parameters
-    const normalizedRoundness = roundness / 100;
-    const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
-    const exponent = 2 + (1 - easedRoundness) * 48;
     const scaledWidth = circleWidth * shapeScale;
     const scaledHeight = circleHeight * shapeScale;
-    const steps = 100;
 
     for (let charIndex = 0; charIndex < inputText.length; charIndex++) {
       const char = inputText[charIndex];
@@ -154,26 +153,10 @@ class App extends React.Component {
             const centerX = xOffset + col * colSpacing;
             const centerY = yOffset + row * rowSpacing;
 
-            // Draw superellipse (Lamé curve) that morphs from rectangle to ellipse
-            // Use ease-out curve for smoother perceived changes
-            const path = new scope.Path();
-            for (let i = 0; i <= steps; i++) {
-              const angle = (i / steps) * Math.PI * 2;
-              const cosT = Math.cos(angle);
-              const sinT = Math.sin(angle);
-
-              // Superellipse formula
-              const x = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
-              const y = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
-
-              path.add(new scope.Point(centerX + x, centerY + y));
-            }
-            path.closed = true;
+            const path = new scope.Path(
+              buildDotPathD(centerX, centerY, scaledWidth, scaledHeight, roundness, 0, rotationAngle)
+            );
             path.fillColor = foregroundColor;
-
-            if (rotationAngle !== 0) {
-              path.rotate(rotationAngle);
-            }
           }
         }
       }
@@ -298,8 +281,6 @@ class App extends React.Component {
       rotationAngle,
       roundness,
       letterSpacing,
-      foregroundColor,
-      backgroundColor,
     } = this.state;
 
     const naming = buildFontNamesFromSettings({
@@ -309,55 +290,36 @@ class App extends React.Component {
       rotationAngle,
       roundness,
       letterSpacing,
-      foregroundColor,
-      backgroundColor,
     });
 
-    // Collect paths for each character
+    const colPitch = circleWidth + 5;
+    const rowPitch = circleHeight + 5;
+
     const glyphData = {};
 
-    // Process each unique character in the font
     Object.keys(this.fontData).forEach(char => {
       const charGrid = this.fontData[char];
       if (!charGrid) return;
 
+      const layoutWidth = charGrid[0].length * colPitch;
+      const layoutHeight = charGrid.length * rowPitch;
       const paths = [];
+      const scaledWidth = circleWidth * shapeScale;
+      const scaledHeight = circleHeight * shapeScale;
 
       for (let row = 0; row < charGrid.length; row++) {
         for (let col = 0; col < charGrid[row].length; col++) {
           if (charGrid[row][col] === "1") {
-            // Position relative to character origin
-            const x = col * (circleWidth + 5);
-            const y = row * (circleHeight + 5);
-            const scaledWidth = circleWidth * shapeScale;
-            const scaledHeight = circleHeight * shapeScale;
+            const x = col * colPitch;
+            const y = row * rowPitch;
 
-            // Generate superellipse path with ease-out curve
-            const normalizedRoundness = roundness / 100;
-            const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
-            const exponent = 2 + (1 - easedRoundness) * 48;
-            const steps = 100;
-            let pathData = "";
-
-            for (let i = 0; i <= steps; i++) {
-              const angle = (i / steps) * Math.PI * 2;
-              const cosT = Math.cos(angle);
-              const sinT = Math.sin(angle);
-
-              const px = Math.pow(Math.abs(cosT), 2 / exponent) * (scaledWidth / 2) * Math.sign(cosT);
-              const py = Math.pow(Math.abs(sinT), 2 / exponent) * (scaledHeight / 2) * Math.sign(sinT);
-
-              pathData += i === 0 ? `M ${x + px} ${y + py}` : ` L ${x + px} ${y + py}`;
-            }
-            pathData += " Z";
-
-            paths.push(pathData);
+            paths.push(buildDotPathD(x, y, scaledWidth, scaledHeight, roundness, 0, rotationAngle));
           }
         }
       }
 
       if (paths.length > 0) {
-        glyphData[char] = paths;
+        glyphData[char] = { paths, layoutWidth, layoutHeight };
       }
     });
 
@@ -370,7 +332,8 @@ class App extends React.Component {
         postScriptName: naming.postScriptName,
         unitsPerEm: 1000,
         ascender: 800,
-        descender: -200
+        descender: 0,
+        roundness
       });
 
       downloadTTF(fontBuffer, naming.filename);
@@ -387,7 +350,45 @@ class App extends React.Component {
   };
 
   handleColorChange = (colorType, value) => {
-    this.setState({ [colorType]: value });
+    this.setState({
+      [colorType]: value.toUpperCase(),
+      ...(colorType === "foregroundColor" ? { hexEditFg: null } : {}),
+      ...(colorType === "backgroundColor" ? { hexEditBg: null } : {}),
+    });
+  };
+
+  normalizeHex6 = (input) => {
+    if (!input || typeof input !== "string") return null;
+    let t = input.trim();
+    if (t.startsWith("#")) t = t.slice(1);
+    t = t.replace(/[^0-9A-Fa-f]/g, "");
+    if (t.length === 3) {
+      t = t[0] + t[0] + t[1] + t[1] + t[2] + t[2];
+    }
+    if (t.length !== 6) return null;
+    return `#${t.toUpperCase()}`;
+  };
+
+  handleHexFocus = (draftKey, colorKey) => {
+    this.setState({ [draftKey]: this.state[colorKey] });
+  };
+
+  handleHexInputChange = (draftKey, colorKey, e) => {
+    let v = e.target.value.toUpperCase();
+    if (!v.startsWith("#")) v = `#${v.replace(/#/g, "")}`;
+    v = `#${v.slice(1).replace(/[^0-9A-F]/g, "").slice(0, 6)}`;
+    const n = this.normalizeHex6(v);
+    this.setState({
+      [draftKey]: v,
+      ...(n ? { [colorKey]: n } : {}),
+    });
+  };
+
+  handleHexBlur = (draftKey, colorKey) => {
+    const draft = this.state[draftKey];
+    const raw = draft != null ? draft : this.state[colorKey];
+    const next = this.normalizeHex6(raw) || this.state[colorKey];
+    this.setState({ [colorKey]: next, [draftKey]: null });
   };
 
   render() {
@@ -427,30 +428,20 @@ class App extends React.Component {
                     { label: "Spacing", property: "letterSpacing", min: -50, max: 50 },
                   ].map(({ label, property, min, max, step = 1 }) => {
                     const value = this.state[property];
-                    const percentage = ((value - min) / (max - min));
 
                     return (
                       <div key={property} className="slider-container">
-                        <label className="slider-label">{label}</label>
-                        <div className="slider-wrapper">
-                          <input
-                            type="range"
-                            min={min}
-                            max={max}
-                            step={step}
-                            value={value}
-                            onChange={(e) =>
-                              this.handleSliderChange(property, parseFloat(e.target.value))
-                            }
-                            className="custom-slider"
-                          />
-                          <div
-                            className="slider-value"
-                            style={{ left: `calc(${percentage * 100}% - ${percentage * 32 + 2}px)` }}
-                          >
-                            {Math.round(value)}
-                          </div>
-                        </div>
+                        <label className="slider-label" htmlFor={`slider-${property}`}>
+                          {label}
+                        </label>
+                        <SettingsSlider
+                          id={`slider-${property}`}
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={value}
+                          onChange={(v) => this.handleSliderChange(property, v)}
+                        />
                       </div>
                     );
                   })}
@@ -460,28 +451,80 @@ class App extends React.Component {
                   <span className="color-label">Colors</span>
                   <div className="color-inputs">
                     <div className="color-input">
-                      <label>
+                      <div className="color-input-row">
                         <span className="color-prefix">FG</span>
                         <input
-                          type="color"
-                          value={foregroundColor}
-                          onChange={(e) => this.handleColorChange('foregroundColor', e.target.value)}
+                          type="text"
+                          className="color-value color-value-input"
+                          spellCheck={false}
+                          autoCapitalize="characters"
+                          aria-label="Foreground hex color"
+                          value={
+                            this.state.hexEditFg !== null
+                              ? this.state.hexEditFg
+                              : foregroundColor
+                          }
+                          onFocus={() => this.handleHexFocus("hexEditFg", "foregroundColor")}
+                          onChange={(e) =>
+                            this.handleHexInputChange("hexEditFg", "foregroundColor", e)
+                          }
+                          onBlur={() => this.handleHexBlur("hexEditFg", "foregroundColor")}
                         />
-                        <span className="color-value">{foregroundColor}</span>
-                      </label>
-                      <div className="color-preview" style={{ backgroundColor: foregroundColor }} />
-                    </div>
-                    <div className="color-input">
-                      <label>
-                        <span className="color-prefix">BG</span>
+                      </div>
+                      <label className="color-swatch">
+                        <span
+                          className="color-swatch-fill"
+                          style={{ backgroundColor: foregroundColor }}
+                          aria-hidden
+                        />
                         <input
                           type="color"
-                          value={backgroundColor}
-                          onChange={(e) => this.handleColorChange('backgroundColor', e.target.value)}
+                          className="color-swatch-input"
+                          value={foregroundColor}
+                          onChange={(e) =>
+                            this.handleColorChange("foregroundColor", e.target.value)
+                          }
+                          aria-label="Foreground color picker"
                         />
-                        <span className="color-value">{backgroundColor}</span>
                       </label>
-                      <div className="color-preview" style={{ backgroundColor: backgroundColor }} />
+                    </div>
+                    <div className="color-input">
+                      <div className="color-input-row">
+                        <span className="color-prefix">BG</span>
+                        <input
+                          type="text"
+                          className="color-value color-value-input"
+                          spellCheck={false}
+                          autoCapitalize="characters"
+                          aria-label="Background hex color"
+                          value={
+                            this.state.hexEditBg !== null
+                              ? this.state.hexEditBg
+                              : backgroundColor
+                          }
+                          onFocus={() => this.handleHexFocus("hexEditBg", "backgroundColor")}
+                          onChange={(e) =>
+                            this.handleHexInputChange("hexEditBg", "backgroundColor", e)
+                          }
+                          onBlur={() => this.handleHexBlur("hexEditBg", "backgroundColor")}
+                        />
+                      </div>
+                      <label className="color-swatch">
+                        <span
+                          className="color-swatch-fill"
+                          style={{ backgroundColor: backgroundColor }}
+                          aria-hidden
+                        />
+                        <input
+                          type="color"
+                          className="color-swatch-input"
+                          value={backgroundColor}
+                          onChange={(e) =>
+                            this.handleColorChange("backgroundColor", e.target.value)
+                          }
+                          aria-label="Background color picker"
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
