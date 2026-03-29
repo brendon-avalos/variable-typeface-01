@@ -13,15 +13,16 @@ function ensurePaperInitialized() {
 }
 
 /**
- * SVG path `d` for one dot: superellipse (Lamé curve) with eased roundness.
- * Shared by live preview and font export so geometry stays identical.
+ * SVG path `d` for one dot: rounded shape from circle-like to square-like.
+ * Uses four cubic Béziers (one per quadrant): κ interpolates between a tight corner and the
+ * standard quarter-ellipse constant (0.55228…). Same winding as the sharp rectangle branch.
  *
  * @param {number} cx - center x
  * @param {number} cy - center y
  * @param {number} scaledWidth
  * @param {number} scaledHeight
  * @param {number} roundness - 0–100 (settings slider)
- * @param {number} [steps=100] - samples around the curve
+ * @param {number} [_steps=288] - ignored (legacy); kept for call-site compatibility
  * @param {number} [rotationDeg=0] - rotation in degrees around (cx, cy), same as Paper path.rotate(angle) at shape center
  * @returns {string}
  */
@@ -35,7 +36,10 @@ function offsetRotated(cx, cy, ox, oy, rotationDeg) {
   return [cx + rx, cy + ry];
 }
 
-export function buildDotPathD(cx, cy, scaledWidth, scaledHeight, roundness, steps = 100, rotationDeg = 0) {
+/** Cubic handle ratio for a quarter-ellipse arc (matches a true circle to ~0.03% error). */
+const KAPPA = 0.5522847498;
+
+export function buildDotPathD(cx, cy, scaledWidth, scaledHeight, roundness, _steps = 288, rotationDeg = 0) {
   const hw = scaledWidth / 2;
   const hh = scaledHeight / 2;
 
@@ -59,21 +63,49 @@ export function buildDotPathD(cx, cy, scaledWidth, scaledHeight, roundness, step
 
   const normalizedRoundness = roundness / 100;
   const easedRoundness = 1 - Math.pow(1 - normalizedRoundness, 3);
-  const exponent = 2 + (1 - easedRoundness) * 48;
 
-  let d = '';
+  // Corner radius scales with roundness: at r=1 fills the full half-dimension → circle/ellipse.
+  // At r=0 we'd have no arcs → rectangle, but roundness=0 uses the L-branch above.
+  const crx = hw * easedRoundness;
+  const cry = hh * easedRoundness;
+  const K = KAPPA;
 
-  for (let i = 0; i <= steps; i++) {
-    const angle = (i / steps) * Math.PI * 2;
-    const cosT = Math.cos(angle);
-    const sinT = Math.sin(angle);
-    const px = Math.pow(Math.abs(cosT), 2 / exponent) * hw * Math.sign(cosT);
-    const py = Math.pow(Math.abs(sinT), 2 / exponent) * hh * Math.sign(sinT);
-    const [xa, ya] = offsetRotated(cx, cy, px, py, rotationDeg);
-    d += i === 0 ? `M ${xa} ${ya}` : ` L ${xa} ${ya}`;
+  // Shorthand: apply rotation to a centered offset and format as "x y"
+  const pt = (ox, oy) => {
+    const [x, y] = offsetRotated(cx, cy, ox, oy, rotationDeg);
+    return `${x} ${y}`;
+  };
+
+  // Path (clockwise from rightmost point, +y down):
+  //   M  right-axis
+  //   L  top of bottom-right arc   (right side, lower half)
+  //   C  bottom-right corner arc
+  //   L  top of bottom-left arc    (bottom side)
+  //   C  bottom-left corner arc
+  //   L  bottom of top-left arc    (left side)
+  //   C  top-left corner arc
+  //   L  end of top-right arc      (top side)
+  //   C  top-right corner arc
+  //   L  right-axis                (right side, upper half)
+  //   Z
+  // #region agent log
+  if (typeof window !== 'undefined' && cx === 0 && cy === 0) {
+    fetch('http://127.0.0.1:7599/ingest/580290b2-e8c0-442c-8837-6b325b1f82a0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e5284e'},body:JSON.stringify({sessionId:'e5284e',location:'pathUtils.js:buildDotPathD',message:'path built',data:{roundness,crx,cry,hw,hh,hasC:true},timestamp:Date.now(),hypothesisId:'H-A,H-D'})}).catch(()=>{});
   }
-
-  return `${d} Z`;
+  // #endregion
+  return [
+    `M ${pt(hw, 0)}`,
+    `L ${pt(hw, hh - cry)}`,
+    `C ${pt(hw, hh - cry * (1 - K))} ${pt(hw - crx * (1 - K), hh)} ${pt(hw - crx, hh)}`,
+    `L ${pt(-hw + crx, hh)}`,
+    `C ${pt(-hw + crx * (1 - K), hh)} ${pt(-hw, hh - cry * (1 - K))} ${pt(-hw, hh - cry)}`,
+    `L ${pt(-hw, -(hh - cry))}`,
+    `C ${pt(-hw, -(hh - cry * (1 - K)))} ${pt(-hw + crx * (1 - K), -hh)} ${pt(-hw + crx, -hh)}`,
+    `L ${pt(hw - crx, -hh)}`,
+    `C ${pt(hw - crx * (1 - K), -hh)} ${pt(hw, -(hh - cry * (1 - K)))} ${pt(hw, -(hh - cry))}`,
+    `L ${pt(hw, 0)}`,
+    'Z',
+  ].join(' ');
 }
 
 /**
@@ -114,6 +146,14 @@ export function mergeShapePaths(pathStrings, opts = {}) {
     // Export as SVG path data
     const pathData = result.pathData;
     result.remove();
+
+    // #region agent log
+    const inputHasC = pathStrings[0].includes(' C ') || pathStrings[0].startsWith('C ');
+    const outputHasC = pathData.includes('C') || pathData.includes('c');
+    const inputCCount = (pathStrings[0].match(/ C /g) || []).length;
+    const outputCCount = (pathData.match(/[Cc]/g) || []).length;
+    fetch('http://127.0.0.1:7599/ingest/580290b2-e8c0-442c-8837-6b325b1f82a0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e5284e'},body:JSON.stringify({sessionId:'e5284e',location:'pathUtils.js:mergeShapePaths',message:'merge result',data:{inputHasC,outputHasC,inputCCount,outputCCount,inputSnippet:pathStrings[0].slice(0,120),outputSnippet:pathData.slice(0,120)},timestamp:Date.now(),hypothesisId:'H-B'})}).catch(()=>{});
+    // #endregion
 
     return pathData;
   } catch (error) {
@@ -175,6 +215,10 @@ export function pathToFontUnits(pathData, unitsPerEm = 1000, bounds, targetSize 
     const commands = [];
     const subPaths = item.children && item.children.length > 0 ? item.children : [item];
 
+    // #region agent log
+    let _straightCount = 0, _curveCount = 0;
+    // #endregion
+
     for (const path of subPaths) {
       for (let i = 0; i < path.curves.length; i++) {
         const curve = path.curves[i];
@@ -189,6 +233,9 @@ export function pathToFontUnits(pathData, unitsPerEm = 1000, bounds, targetSize 
         }
 
         if (curve.isStraight()) {
+          // #region agent log
+          _straightCount++;
+          // #endregion
           // Line to
           commands.push({
             type: 'L',
@@ -196,6 +243,9 @@ export function pathToFontUnits(pathData, unitsPerEm = 1000, bounds, targetSize 
             y: roundLineCoord(curve.point2.y)
           });
         } else {
+          // #region agent log
+          _curveCount++;
+          // #endregion
           // Cubic bezier curve
           commands.push({
             type: 'C',
@@ -211,6 +261,10 @@ export function pathToFontUnits(pathData, unitsPerEm = 1000, bounds, targetSize 
       // Close each contour
       commands.push({ type: 'Z' });
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7599/ingest/580290b2-e8c0-442c-8837-6b325b1f82a0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e5284e'},body:JSON.stringify({sessionId:'e5284e',location:'pathUtils.js:pathToFontUnits',message:'curve type counts',data:{straightCount:_straightCount,curveCount:_curveCount,inputSnippet:pathData.slice(0,120)},timestamp:Date.now(),hypothesisId:'H-C'})}).catch(()=>{});
+    // #endregion
 
     item.remove();
     return commands;

@@ -154,7 +154,7 @@ class App extends React.Component {
             const centerY = yOffset + row * rowSpacing;
 
             const path = new scope.Path(
-              buildDotPathD(centerX, centerY, scaledWidth, scaledHeight, roundness, 100, rotationAngle)
+              buildDotPathD(centerX, centerY, scaledWidth, scaledHeight, roundness, 0, rotationAngle)
             );
             path.fillColor = foregroundColor;
           }
@@ -304,16 +304,16 @@ class App extends React.Component {
       const layoutWidth = charGrid[0].length * colPitch;
       const layoutHeight = charGrid.length * rowPitch;
       const paths = [];
+      const scaledWidth = circleWidth * shapeScale;
+      const scaledHeight = circleHeight * shapeScale;
 
       for (let row = 0; row < charGrid.length; row++) {
         for (let col = 0; col < charGrid[row].length; col++) {
           if (charGrid[row][col] === "1") {
             const x = col * colPitch;
             const y = row * rowPitch;
-            const scaledWidth = circleWidth * shapeScale;
-            const scaledHeight = circleHeight * shapeScale;
 
-            paths.push(buildDotPathD(x, y, scaledWidth, scaledHeight, roundness, 100, rotationAngle));
+            paths.push(buildDotPathD(x, y, scaledWidth, scaledHeight, roundness, 0, rotationAngle));
           }
         }
       }

@@ -68,8 +68,8 @@ export function generateTTF(glyphData, options = {}) {
     roundness = 0
   } = options;
 
-  // Simplify turns many short L segments into cubics that poorly fit superellipses;
-  // keep line loops when roundness > 0. Rectilinear (roundness 0) still benefits from simplify.
+  // Round dots are already smooth cubics; skip simplify so Paper does not distort them.
+  // Rectilinear (roundness 0) still benefits from simplify.
   const mergeOpts =
     roundness > 0 ? { simplifyTolerance: null } : { simplifyTolerance: 0.5 };
 
