@@ -27,6 +27,7 @@ const PRESET_SETTINGS = [
   { circleWidth: 39, circleHeight: 27, rotationAngle: 360, roundness: 100, shapeScale: 0.5, letterSpacing: 10 },
   { circleWidth: 45, circleHeight: 25, rotationAngle: 0, roundness: 100, shapeScale: 1.8, letterSpacing: 50 },
   { circleWidth: 20, circleHeight: 50, rotationAngle: 360, roundness: 1, shapeScale: 1.1, letterSpacing: 5 },
+  { circleWidth: 50, circleHeight: 11, rotationAngle: 360, roundness: 100, shapeScale: 1.7, letterSpacing: -9 },
 ];
 
 function buildRandomSettings() {
@@ -101,7 +102,7 @@ class App extends React.Component {
     j: ["0001", "0000", "0001", "0001", "1001", "0110"],
     k: ["1000", "1001", "1110", "1010", "1001", "0000"],
     l: ["110", "010", "010", "010", "111", "000"],
-    m: ["00000", "11111", "10101", "10101", "10101", "00000"],
+    m: ["00000", "11110", "10101", "10101", "10101", "00000"],
     n: ["0000", "1110", "1001", "1001", "1001", "0000"],
     o: ["0000", "0110", "1001", "1001", "0110", "0000"],
     p: ["0000", "0110", "1001", "1110", "1000", "1000"],
@@ -111,7 +112,7 @@ class App extends React.Component {
     t: ["0010", "0010", "1111", "0010", "0010", "0000"],
     u: ["0000", "1001", "1001", "1001", "1111", "0000"],
     v: ["0000", "1001", "1001", "0101", "0011", "0000"],
-    w: ["00000", "10101", "10101", "10101", "11111", "00000"],
+    w: ["00000", "10101", "10101", "10101", "11110", "00000"],
     x: ["0000", "1001", "0110", "0110", "1001", "0000"],
     y: ["0000", "1001", "1001", "0111", "0001", "1110"],
     z: ["0000", "1111", "0010", "0100", "1111", "0000"],
