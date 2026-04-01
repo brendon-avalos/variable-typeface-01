@@ -183,7 +183,7 @@ canvas {
 
   .download-column {
     width: 100%;
-    min-height: 48px;
+    min-height: 40px;
   }
 
   .download-button {
