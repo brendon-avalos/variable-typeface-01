@@ -25,6 +25,8 @@ const PRESET_SETTINGS = [
   { circleWidth: 36, circleHeight: 50, rotationAngle: 180, roundness: 0, shapeScale: 1.6, letterSpacing: 33 },
   { circleWidth: 39, circleHeight: 30, rotationAngle: 318, roundness: 61, shapeScale: 2.3, letterSpacing: 20 },
   { circleWidth: 39, circleHeight: 27, rotationAngle: 360, roundness: 100, shapeScale: 0.5, letterSpacing: 10 },
+  { circleWidth: 45, circleHeight: 25, rotationAngle: 0, roundness: 100, shapeScale: 1.8, letterSpacing: 50 },
+  { circleWidth: 20, circleHeight: 50, rotationAngle: 360, roundness: 1, shapeScale: 1.1, letterSpacing: 5 },
 ];
 
 function buildRandomSettings() {
