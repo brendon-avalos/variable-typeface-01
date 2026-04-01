@@ -171,6 +171,7 @@ export function mergeShapePaths(pathStrings, opts = {}) {
  * @param {number} targetSize - Target vertical span in font units (e.g. ascender) after layout scale
  * @param {object} [layoutOpts] - When `layoutHeight` is set, scale by grid em-box and preserve vertical grid origin (matches canvas preview)
  * @param {number} [layoutOpts.layoutHeight] - Design-space grid height (e.g. rows × rowPitch)
+ * @param {number} [layoutOpts.baselineYDesign] - When set, Y-down coordinate of typographic baseline (bottom of baseline row dot centers + half dot height). Row 0-index 4 = 5th grid row; row 5 = descender.
  * @returns {object} - Path commands suitable for opentype.js
  */
 function roundLineCoord(v) {
@@ -204,10 +205,14 @@ export function pathToFontUnits(pathData, unitsPerEm = 1000, bounds, targetSize 
     item.scale(scale, new paper.Point(0, 0));
 
     // Flip Y-axis (SVG has Y down, fonts have Y up): flip around y=0, then shift up.
-    // Layout mode: align baseline to bottom of ink (not full grid height), so lowest outline maps to y=0.
-    const flipSpan = layoutHeight != null
-      ? (bounds.height > 0 ? bounds.y + bounds.height : layoutHeight) * scale
-      : bounds.height * scale;
+    // Layout mode: fixed grid baseline (bottom of 5th row / 0-index row 4) maps to font y=0 so descenders
+    // sit below baseline; otherwise fall back to aligning lowest ink to y=0.
+    const flipSpan =
+      layoutOpts?.baselineYDesign != null
+        ? layoutOpts.baselineYDesign * scale
+        : layoutHeight != null
+          ? (bounds.height > 0 ? bounds.y + bounds.height : layoutHeight) * scale
+          : bounds.height * scale;
     item.scale(1, -1, new paper.Point(0, 0));
     item.translate(new paper.Point(0, flipSpan));
 

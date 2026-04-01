@@ -54,6 +54,9 @@ export function buildFontNamesFromSettings(settings) {
  * Generates a TTF font file from glyph data
  * @param {object} glyphData - Map of char → path string[] **or** `{ paths, layoutWidth, layoutHeight }` (grid em-box, matches preview)
  * @param {object} options - Font options (name, family, style, etc.)
+ * @param {number} [options.layoutRowPitch] - With `layoutDotScaledHeight`, fixes export baseline to bottom of row `baselineRowIndex0` (default 4 = 5th grid row); row below is descender
+ * @param {number} [options.layoutDotScaledHeight] - Scaled dot height (`circleHeight * shapeScale`)
+ * @param {number} [options.baselineRowIndex0=4] - 0-index row whose lower edge is the typographic baseline
  * @returns {ArrayBuffer} - TTF font file as ArrayBuffer
  */
 export function generateTTF(glyphData, options = {}) {
@@ -64,9 +67,31 @@ export function generateTTF(glyphData, options = {}) {
     postScriptName,
     unitsPerEm = 1000,
     ascender = 800,
-    descender = 0,
-    roundness = 0
+    descender: descenderOption = 0,
+    roundness = 0,
+    layoutRowPitch = null,
+    layoutDotScaledHeight = null,
+    baselineRowIndex0 = 4,
   } = options;
+
+  const firstKey = Object.keys(glyphData)[0];
+  const firstEntry = firstKey ? glyphData[firstKey] : null;
+  const sampleLayoutHeight =
+    firstEntry && !Array.isArray(firstEntry) && firstEntry.layoutHeight > 0
+      ? firstEntry.layoutHeight
+      : null;
+
+  const baselineYDesign =
+    layoutRowPitch != null &&
+    layoutDotScaledHeight != null &&
+    baselineRowIndex0 >= 0
+      ? baselineRowIndex0 * layoutRowPitch + layoutDotScaledHeight / 2
+      : null;
+
+  const descender =
+    baselineYDesign != null && layoutRowPitch != null && sampleLayoutHeight
+      ? -Math.ceil((layoutRowPitch * ascender) / sampleLayoutHeight)
+      : descenderOption;
 
   // Round dots are already smooth cubics; skip simplify so Paper does not distort them.
   // Rectilinear (roundness 0) still benefits from simplify.
@@ -126,7 +151,12 @@ export function generateTTF(glyphData, options = {}) {
         unitsPerEm,
         bounds,
         ascender,
-        useLayout ? { layoutHeight } : null
+        useLayout
+          ? {
+              layoutHeight,
+              ...(baselineYDesign != null ? { baselineYDesign } : {}),
+            }
+          : null
       );
 
       // Create opentype.js path
