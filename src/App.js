@@ -85,6 +85,33 @@ class App extends React.Component {
     " ": ["0000", "0000", "0000", "0000", "0000", "0000"],
   };
 
+  ensureCanvasSize = (requiredCssHeight = window.innerHeight) => {
+    if (!this.canvas) return;
+
+    const cssWidth = Math.max(1, Math.floor(window.innerWidth));
+    const cssHeight = Math.max(1, Math.ceil(requiredCssHeight));
+    const dpr = window.devicePixelRatio || 1;
+    const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
+    const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+    if (this.canvas.style.width !== `${cssWidth}px`) {
+      this.canvas.style.width = `${cssWidth}px`;
+    }
+    if (this.canvas.style.height !== `${cssHeight}px`) {
+      this.canvas.style.height = `${cssHeight}px`;
+    }
+
+    const sizeChanged = this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight;
+    if (!sizeChanged) return;
+
+    this.canvas.width = pixelWidth;
+    this.canvas.height = pixelHeight;
+
+    if (this.paperScope && this.paperScope.view) {
+      this.paperScope.view.viewSize = new this.paperScope.Size(cssWidth, cssHeight);
+    }
+  };
+
   drawScene = () => {
     const scope = this.paperScope;
     if (!scope) return;
@@ -163,27 +190,29 @@ class App extends React.Component {
       cursorLine.strokeColor = "#000000";
       cursorLine.strokeWidth = 0.5;
     }
+
+    const contentBottom = yOffset + rowSpacing * 5 + scaledHeight / 2;
+    this.ensureCanvasSize(contentBottom + margin);
   };
 
   componentDidMount() {
     // Create canvas and set up Paper.js with its own scope
     const canvas = document.createElement('canvas');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
     this.myRef.current.appendChild(canvas);
     this.canvas = canvas;
+    this.ensureCanvasSize(window.innerHeight);
 
     this.paperScope = new paper.PaperScope();
     this.paperScope.setup(canvas);
+    this.paperScope.view.viewSize = new this.paperScope.Size(window.innerWidth, window.innerHeight);
 
     // Animation loop
     this.paperScope.view.onFrame = () => this.drawScene();
 
     // Handle window resize
     this.handleResize = () => {
-      if (this.paperScope && this.paperScope.view) {
-        this.paperScope.view.viewSize = new this.paperScope.Size(window.innerWidth, window.innerHeight);
-      }
+      const currentCssHeight = this.canvas ? this.canvas.clientHeight : window.innerHeight;
+      this.ensureCanvasSize(Math.max(window.innerHeight, currentCssHeight));
     };
     window.addEventListener('resize', this.handleResize);
 

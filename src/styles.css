@@ -10,7 +10,9 @@
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  background: #FFEBD8;
+  overflow-x: hidden;
+  overflow-y: auto;
   width: 100%;
 }
 
@@ -32,8 +34,6 @@ body {
 
 canvas {
   display: block;
-  width: 100vw !important;
-  height: 100vh !important;
   margin: 0;
   padding: 0;
 }
