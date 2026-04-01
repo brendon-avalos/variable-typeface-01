@@ -189,4 +189,11 @@ canvas {
   .download-button {
     height: auto;
   }
+  .settings-panel {
+    padding: 12px 12px;
+  }
+
+  .font-title-preview {
+    padding: 0 12px;
+  }
 }
