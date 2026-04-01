@@ -25,12 +25,12 @@ export function buildFontNamesFromSettings(settings) {
   const R = Math.round(rotationAngle);
   const Rn = Math.round(roundness);
 
-  const fontFamily = `Blip W${W} H${H} S${scaleDisplay} R${R} Rn${Rn}`;
+  const fontFamily = `Blip W${W} H${H} R${R} Rn${Rn} S${scaleDisplay}`;
   const styleName = 'Regular';
   const fullName = `${fontFamily} ${styleName}`;
 
   let postScriptName =
-    `Blip-W${W}-H${H}-S${S}-R${R}-Rn${Rn}`;
+    `Blip-W${W}-H${H}-R${R}-Rn${Rn}-S${S}`;
 
   if (postScriptName.length > MAX_POSTSCRIPT_NAME_LEN) {
     let h = 0;
