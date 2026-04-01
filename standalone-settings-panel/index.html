@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Standalone settings panel (demo)</title>
+    <link rel="stylesheet" href="settings-panel.css" />
+    <style>
+      /* Page chrome only — not part of the portable panel */
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #1a1a1a;
+        font-family: system-ui, sans-serif;
+      }
+      #demo-readout {
+        position: fixed;
+        left: 20px;
+        top: 20px;
+        max-width: min(420px, calc(100vw - 320px));
+        padding: 12px 14px;
+        background: rgba(0, 0, 0, 0.45);
+        color: #ddd;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <pre id="demo-readout"></pre>
+
+    <div class="settings-panel" id="settings-panel" data-open="true">
+      <div class="settings-content">
+        <div class="settings-header">
+          <span class="settings-title">Settings</span>
+          <button type="button" class="collapse-button" aria-label="Toggle settings" aria-expanded="true">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2 4.5L6 8.5L10 4.5" stroke="white" style="stroke: white; stroke-opacity: 1" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="settings-body open">
+          <div class="settings-body-inner">
+            <div class="settings-list">
+              <div class="slider-container">
+                <label class="slider-label" for="slider-width">Width</label>
+                <div
+                  id="slider-width"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="circleWidth"
+                  data-min="5"
+                  data-max="50"
+                  data-step="1"
+                  aria-valuemin="5"
+                  aria-valuemax="50"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">20</div>
+                  </div>
+                </div>
+              </div>
+              <div class="slider-container">
+                <label class="slider-label" for="slider-height">Height</label>
+                <div
+                  id="slider-height"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="circleHeight"
+                  data-min="5"
+                  data-max="50"
+                  data-step="1"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">20</div>
+                  </div>
+                </div>
+              </div>
+              <div class="slider-container">
+                <label class="slider-label" for="slider-scale">Scale</label>
+                <div
+                  id="slider-scale"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="shapeScale"
+                  data-min="0.5"
+                  data-max="3"
+                  data-step="0.1"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">1</div>
+                  </div>
+                </div>
+              </div>
+              <div class="slider-container">
+                <label class="slider-label" for="slider-rot">Rotation</label>
+                <div
+                  id="slider-rot"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="rotationAngle"
+                  data-min="0"
+                  data-max="360"
+                  data-step="1"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">0</div>
+                  </div>
+                </div>
+              </div>
+              <div class="slider-container">
+                <label class="slider-label" for="slider-rn">Roundness</label>
+                <div
+                  id="slider-rn"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="roundness"
+                  data-min="0"
+                  data-max="100"
+                  data-step="1"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">50</div>
+                  </div>
+                </div>
+              </div>
+              <div class="slider-container">
+                <label class="slider-label" for="slider-sp">Spacing</label>
+                <div
+                  id="slider-sp"
+                  class="custom-slider-root"
+                  role="slider"
+                  tabindex="0"
+                  data-setting="letterSpacing"
+                  data-min="-50"
+                  data-max="50"
+                  data-step="1"
+                >
+                  <div class="custom-slider-track">
+                    <div class="custom-slider-thumb">5</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="color-section">
+              <span class="color-label">Colors</span>
+              <div class="color-inputs">
+                <div class="color-input">
+                  <div class="color-input-row">
+                    <span class="color-prefix">FG</span>
+                    <input
+                      type="text"
+                      class="color-value-input"
+                      data-color-hex="fg"
+                      spellcheck="false"
+                      autocapitalize="characters"
+                      aria-label="Foreground hex color"
+                    />
+                  </div>
+                  <label class="color-swatch">
+                    <span class="color-swatch-fill" data-color-swatch="fg" aria-hidden="true"></span>
+                    <input type="color" class="color-swatch-input" data-color-native="fg" aria-label="Foreground color picker" />
+                  </label>
+                </div>
+                <div class="color-input">
+                  <div class="color-input-row">
+                    <span class="color-prefix">BG</span>
+                    <input
+                      type="text"
+                      class="color-value-input"
+                      data-color-hex="bg"
+                      spellcheck="false"
+                      autocapitalize="characters"
+                      aria-label="Background hex color"
+                    />
+                  </div>
+                  <label class="color-swatch">
+                    <span class="color-swatch-fill" data-color-swatch="bg" aria-hidden="true"></span>
+                    <input type="color" class="color-swatch-input" data-color-native="bg" aria-label="Background color picker" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="settings-panel.js"></script>
+    <script>
+      (function () {
+        var readout = document.getElementById("demo-readout");
+        var panel = document.getElementById("settings-panel");
+
+        var api = StandaloneSettingsPanel.init(panel, {
+          values: {
+            circleWidth: 20,
+            circleHeight: 20,
+            shapeScale: 1,
+            rotationAngle: 0,
+            roundness: 50,
+            letterSpacing: 5,
+            foregroundColor: "#FFFFFF",
+            backgroundColor: "#000000",
+          },
+          onChange: function (key, value, all) {
+            var copy = Object.assign({}, all);
+            delete copy.hexEditFg;
+            delete copy.hexEditBg;
+            readout.textContent = JSON.stringify(copy, null, 2);
+            document.body.style.background = all.backgroundColor;
+            readout.style.color = all.foregroundColor;
+          },
+        });
+
+        var initial = api.getValues();
+        var o = Object.assign({}, initial);
+        delete o.hexEditFg;
+        delete o.hexEditBg;
+        readout.textContent = JSON.stringify(o, null, 2);
+        document.body.style.background = initial.backgroundColor;
+        readout.style.color = initial.foregroundColor;
+      })();
+    </script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect } from "react";
 
-const THUMB_WIDTH = 32;
+const THUMB_WIDTH = 16;
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n));
@@ -32,16 +32,13 @@ function formatDisplay(value, step) {
   return Number(value.toFixed(Math.min(decimals, 4)));
 }
 
-/**
- * Custom slider: thumb and value label are the same element; position uses one model.
- */
 export function SettingsSlider({ id, min, max, step = 1, value, onChange }) {
   const rootRef = useRef(null);
   const trackRef = useRef(null);
   const dragPointerId = useRef(null);
 
   const percentage = max === min ? 0 : (value - min) / (max - min);
-  const display = formatDisplay(value, step);
+  const display = String(formatDisplay(value, step));
 
   const applyFromEvent = useCallback(
     (clientX) => {
@@ -128,31 +125,34 @@ export function SettingsSlider({ id, min, max, step = 1, value, onChange }) {
   };
 
   return (
-    <div
-      ref={rootRef}
-      id={id}
-      className="custom-slider-root"
-      role="slider"
-      tabIndex={0}
-      aria-valuemin={min}
-      aria-valuemax={max}
-      aria-valuenow={value}
-      aria-valuetext={String(display)}
-      aria-orientation="horizontal"
-      onKeyDown={onKeyDown}
-    >
+    <div className="settings-slider">
       <div
-        ref={trackRef}
-        className="custom-slider-track"
-        onPointerDown={onTrackPointerDown}
+        ref={rootRef}
+        id={id}
+        className="custom-slider-root"
+        role="slider"
+        tabIndex={0}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={display}
+        aria-orientation="horizontal"
+        onKeyDown={onKeyDown}
       >
         <div
-          className="custom-slider-thumb"
-          style={{ "--slider-pct": percentage }}
-          onPointerDown={onThumbPointerDown}
+          ref={trackRef}
+          className="custom-slider-track"
+          onPointerDown={onTrackPointerDown}
         >
-          {display}
+          <div
+            className="custom-slider-thumb"
+            style={{ "--slider-pct": percentage }}
+            onPointerDown={onThumbPointerDown}
+          />
         </div>
+      </div>
+      <div className="custom-slider-value" aria-hidden>
+        {display}
       </div>
     </div>
   );
