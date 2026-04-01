@@ -162,11 +162,6 @@ canvas {
   cursor: pointer;
 }
 
-.download-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 @media (max-width: 1024px) {
   .settings-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

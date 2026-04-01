@@ -8,17 +8,48 @@ import { SettingsSlider } from "./SettingsSlider";
 const CANVAS_BG = "#FFEBD8";
 const INK_COLOR = "#0022FF";
 
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomStepped(min, max, step) {
+  const steps = Math.round((max - min) / step);
+  const pick = randomInt(0, steps);
+  return Number((min + pick * step).toFixed(4));
+}
+
+const PRESET_SETTINGS = [
+  { circleWidth: 19, circleHeight: 39, rotationAngle: 209, roundness: 99, shapeScale: 1.9, letterSpacing: 26 },
+  { circleWidth: 26, circleHeight: 20, rotationAngle: 0, roundness: 100, shapeScale: 1.4, letterSpacing: 12 },
+  { circleWidth: 17, circleHeight: 27, rotationAngle: 360, roundness: 29, shapeScale: 1.6, letterSpacing: 10 },
+  { circleWidth: 36, circleHeight: 50, rotationAngle: 180, roundness: 0, shapeScale: 1.6, letterSpacing: 33 },
+  { circleWidth: 39, circleHeight: 30, rotationAngle: 318, roundness: 61, shapeScale: 2.3, letterSpacing: 20 },
+  { circleWidth: 39, circleHeight: 27, rotationAngle: 360, roundness: 100, shapeScale: 0.5, letterSpacing: 10 },
+];
+
+function buildRandomSettings() {
+  return {
+    circleWidth: randomInt(5, 50),
+    circleHeight: randomInt(5, 50),
+    shapeScale: randomStepped(0.5, 3, 0.1),
+    rotationAngle: randomInt(0, 360),
+    roundness: randomInt(0, 100),
+    letterSpacing: randomInt(-50, 50),
+  };
+}
+
+function getInitialSettings() {
+  return PRESET_SETTINGS[randomInt(0, PRESET_SETTINGS.length - 1)];
+}
+
 class App extends React.Component {
   constructor(props) {
     super(props);
+    const randomSettings = getInitialSettings();
+
     this.myRef = React.createRef();
     this.state = {
-      circleWidth: 20,
-      circleHeight: 20,
-      shapeScale: 1,
-      rotationAngle: 0,
-      roundness: 50,
-      letterSpacing: 5,
+      ...randomSettings,
       inputText: "blip",
       canvasFocused: false,
       showCursor: true,
@@ -416,7 +447,6 @@ class App extends React.Component {
               <button
                 className="download-button"
                 onClick={this.handleExport}
-                disabled={!this.state.inputText.trim()}
               >
                 Download Font
               </button>
