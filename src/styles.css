@@ -10,7 +10,7 @@
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
 }
 
@@ -22,7 +22,7 @@ body {
 
 .App {
   font-family: "Avenue Mono", monospace;
-  text-align: center;
+  text-align: left;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -30,7 +30,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Canvas element should be full width */
 canvas {
   display: block;
   width: 100vw !important;
@@ -39,388 +38,156 @@ canvas {
   padding: 0;
 }
 
-/* Settings Panel — pinned to viewport top-right; only height changes, not position */
-.settings-panel {
+.bottom-chrome {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  left: auto;
-  bottom: auto;
-  margin: 0;
-  background: #444;
-  border-radius: 16px;
-  padding: 8px 8px 8px 12px;
-  width: 280px;
-  max-width: calc(100vw - 40px);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 0;
   box-sizing: border-box;
 }
 
-/*
- * Row 1 = header only (auto height, never grows with row 2). Row 2 = collapsible body.
- * align-content: start keeps rows packed to the top so the title bar does not shift vertically.
- */
-.settings-content {
-  display: grid;
-  grid-template-rows: auto 0fr;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  justify-items: stretch;
-  /* Same duration + curve as .settings-body-inner on close = one continuous motion */
-  transition: grid-template-rows 0.34s cubic-bezier(0.33, 1, 0.68, 1);
-}
-
-.settings-panel[data-open="true"] .settings-content {
-  grid-template-rows: auto 1fr;
-}
-
-.settings-header {
-  grid-row: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-shrink: 0;
-  min-width: 0;
-}
-
-.settings-title {
-  font-family: "Avenue Mono", monospace;
-  font-size: 10px;
-  color: white;
-  font-weight: normal;
+.font-title-preview {
   margin: 0;
+  padding: 0 24px;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: #0022ff;
+  text-transform: uppercase;
 }
 
-.collapse-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 52px;
-  width: 24px;
-  height: 24px;
+.settings-panel {
+  background: #fff;
+  box-shadow: 0 4px 74px rgba(0, 0, 0, 0.16);
+  padding: 12px 24px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 4px;
-  transition: transform 0.34s cubic-bezier(0.33, 1, 0.68, 1);
-}
-
-.collapse-button:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Row 2: clips region. Open = shell expands then inner (delayed). Close = grid + fade + lift in parallel. */
-.settings-body {
-  grid-row: 2;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.settings-body-inner {
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  align-items: stretch;
   gap: 16px;
-  padding-top: 8px;
 }
 
-.settings-body.open .settings-body-inner {
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-  transition:
-    opacity 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0.1s,
-    transform 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0.08s,
-    visibility 0s;
-}
-
-.settings-body.closed .settings-body-inner {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition:
-    opacity 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0s,
-    transform 0.34s cubic-bezier(0.33, 1, 0.68, 1) 0s,
-    visibility 0s linear 0.32s;
-  visibility: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-content {
-    transition: none;
-  }
-
-  .settings-body.open .settings-body-inner,
-  .settings-body.closed .settings-body-inner {
-    transition: none;
-    transform: none;
-  }
-
-  .settings-body.open .settings-body-inner {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .settings-body.closed .settings-body-inner {
-    opacity: 0;
-    visibility: hidden;
-  }
-
-  .settings-panel[data-open="true"] .settings-content {
-    grid-template-rows: auto 1fr;
-  }
-
-  .settings-panel[data-open="false"] .settings-content {
-    grid-template-rows: auto 0fr;
-  }
-
-  .collapse-button {
-    transition: none;
-  }
-}
-
-/* Settings List */
 .settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 8px;
+  height: fit-content;
 }
 
-/* Slider Container — name + track share one row; thumb math lives in CSS via --slider-pct (0–1) */
 .slider-container {
-  display: flex;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .slider-label {
-  flex: 0 0 56px;
-  font-family: "Avenue Mono", monospace;
   font-size: 10px;
-  color: white;
+  color: #1a1a1a;
+  text-transform: uppercase;
   margin: 0;
-  text-align: left;
-  opacity: 0.5;
 }
 
-/* Custom slider (SettingsSlider): thumb and value are one element */
+.settings-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .custom-slider-root {
-  flex: 1;
   min-width: 0;
   outline: none;
 }
 
-.custom-slider-root:focus-visible {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
-  border-radius: 6px;
-}
-
 .custom-slider-track {
   position: relative;
-  height: 22px;
-  display: flex;
-  align-items: center;
+  height: 16px;
+  background: #e7e7e7;
   cursor: pointer;
   touch-action: none;
-}
-
-.custom-slider-track::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 4px;
-  margin-top: -2px;
-  background: #505050;
-  border-radius: 2px;
-  pointer-events: none;
 }
 
 .custom-slider-thumb {
   --slider-pct: 0;
   position: absolute;
-  left: calc((100% - 32px) * var(--slider-pct));
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
+  left: calc((100% - 16px) * var(--slider-pct));
+  top: 0;
+  width: 16px;
   height: 16px;
-  margin: 0;
-  padding: 0 2px;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 34px;
-  background: #505050;
-  font-family: "Avenue Mono", monospace;
-  font-size: 10px;
-  line-height: 16px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #000;
   cursor: grab;
   user-select: none;
-  z-index: 1;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .custom-slider-thumb:active {
   cursor: grabbing;
 }
 
-/* Color Section */
-.color-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.color-label {
-  font-family: "Avenue Mono", monospace;
-  font-size: 10px;
-  color: white;
-  margin: 0;
-  text-align: left;
-  opacity: 0.5;
-  width: 56px;
-  flex-shrink: 0;
-}
-
-.color-inputs {
-  display: flex;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-}
-
-.color-input {
-  background: #505050;
-  border-radius: 2px;
-  padding: 4px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 1;
-  gap: 6px;
-  width: 100%;
-  min-height: 22px;
+.custom-slider-value {
+  width: 32px;
+  height: 16px;
+  border: 1px solid #cfcfcf;
   box-sizing: border-box;
-}
-
-.color-input-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 14px;
-}
-
-.color-prefix {
-  font-family: "Avenue Mono", monospace;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.color-value {
-  font-family: "Avenue Mono", monospace;
-  font-size: 10px;
-  color: white;
-  text-transform: uppercase;
-}
-
-.color-value-input {
-  flex: 0 1 auto;
-  width: 7.25ch;
-  min-width: 0;
-  max-width: 100%;
-  height: 14px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-  font-family: "Avenue Mono", monospace;
-  font-size: 10px;
-  line-height: 14px;
-  color: white;
-  text-transform: uppercase;
-  outline: none;
-  box-sizing: border-box;
-  vertical-align: top;
-}
-
-.color-value-input:focus {
-  opacity: 1;
-}
-
-.color-value-input::selection {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Hit target matches visible swatch: native color input fills label */
-.color-swatch {
-  position: relative;
-  flex-shrink: 0;
-  width: 12px;
-  height: 12px;
-  margin: 0;
-  padding: 0;
-  border-radius: 2px;
-  overflow: hidden;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.color-swatch-fill {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.color-swatch-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
-  opacity: 0;
-  cursor: pointer;
-  font-size: 0;
-}
-
-.color-swatch:has(.color-swatch-input:focus-visible) {
-  outline: 1px solid rgba(255, 255, 255, 0.55);
-  outline-offset: 1px;
-}
-
-/* Download Button */
-.download-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 52px;
-  height: 36px;
-  font-family: "Avenue Mono", monospace;
-  font-size: 11px;
-  color: white;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  color: #000;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.download-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+.download-column {
+  width: 224px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.download-button {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: #0022ff;
+  color: #fff;
+  font-family: "Avenue Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .download-button:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .settings-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .bottom-chrome {
+    padding: 0 12px 12px;
+  }
+
+  .settings-panel {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settings-list {
+    grid-template-columns: 1fr;
+  }
+
+  .download-column {
+    width: 100%;
+  }
 }

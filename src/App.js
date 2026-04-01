@@ -1,10 +1,12 @@
 import React from "react";
 import "./styles.css";
 import paper from "paper";
-import caretIcon from "./icons/caret.svg";
 import { buildFontNamesFromSettings, generateTTF, downloadTTF } from "./fontGenerator";
 import { buildDotPathD } from "./pathUtils";
 import { SettingsSlider } from "./SettingsSlider";
+
+const CANVAS_BG = "#FFEBD8";
+const INK_COLOR = "#0022FF";
 
 class App extends React.Component {
   constructor(props) {
@@ -17,14 +19,9 @@ class App extends React.Component {
       rotationAngle: 0,
       roundness: 50,
       letterSpacing: 5,
-      inputText: "abc",
+      inputText: "blip",
       canvasFocused: false,
       showCursor: true,
-      settingsPanelOpen: true,
-      foregroundColor: "#FFFFFF",
-      backgroundColor: "#000000",
-      hexEditFg: null,
-      hexEditBg: null,
     };
   }
 
@@ -35,8 +32,8 @@ class App extends React.Component {
     B: ["1110", "1001", "1110", "1001", "1110", "0000"],
     C: ["0111", "1000", "1000", "1000", "0111", "0000"],
     D: ["1110", "1001", "1001", "1001", "1110", "0000"],
-    E: ["1111", "1000", "1111", "1000", "1111", "0000"],
-    F: ["1111", "1000", "1111", "1000", "1000", "0000"],
+    E: ["1111", "1000", "1110", "1000", "1111", "0000"],
+    F: ["1111", "1000", "1110", "1000", "1000", "0000"],
     G: ["0111", "1000", "1011", "1001", "0111", "0000"],
     H: ["1001", "1001", "1111", "1001", "1001", "0000"],
     I: ["111", "010", "010", "010", "111", "000"],
@@ -50,7 +47,7 @@ class App extends React.Component {
     Q: ["0110", "1001", "1001", "1011", "0111", "0000"],
     R: ["1110", "1001", "1110", "1010", "1001", "0000"],
     S: ["0111", "1000", "0110", "0001", "1110", "0000"],
-    T: ["1111", "0010", "0010", "0010", "0010", "0000"],
+    T: ["11111", "00100", "00100", "00100", "00100", "00000"],
     U: ["1001", "1001", "1001", "1001", "1111", "0000"],
     V: ["1001", "1001", "1001", "0101", "0011", "0000"],
     W: ["10101", "10101", "10101", "10101", "01010", "00000"],
@@ -70,7 +67,7 @@ class App extends React.Component {
     i: ["010", "000", "110", "010", "111", "000"],
     j: ["0001", "0000", "0001", "0001", "1001", "0110"],
     k: ["1000", "1001", "1110", "1010", "1001", "0000"],
-    l: ["0110", "0010", "0010", "0010", "1111", "0000"],
+    l: ["110", "010", "010", "010", "111", "000"],
     m: ["00000", "11111", "10101", "10101", "10101", "00000"],
     n: ["0000", "1110", "1001", "1001", "1001", "0000"],
     o: ["0000", "0110", "1001", "1001", "0110", "0000"],
@@ -85,6 +82,7 @@ class App extends React.Component {
     x: ["0000", "1001", "0110", "0110", "1001", "0000"],
     y: ["0000", "1001", "1001", "0111", "0001", "1110"],
     z: ["0000", "1111", "0010", "0100", "1111", "0000"],
+    " ": ["0000", "0000", "0000", "0000", "0000", "0000"],
   };
 
   drawScene = () => {
@@ -101,8 +99,6 @@ class App extends React.Component {
       inputText,
       canvasFocused,
       showCursor,
-      foregroundColor,
-      backgroundColor,
     } = this.state;
 
     // Clear everything
@@ -118,16 +114,7 @@ class App extends React.Component {
     const bg = new scope.Path.Rectangle(
       new scope.Rectangle(0, 0, viewWidth, viewHeight)
     );
-    bg.fillColor = backgroundColor;
-
-    // Draw focus indicator if canvas is focused
-    if (canvasFocused) {
-      const focusRect = new scope.Path.Rectangle(
-        new scope.Rectangle(1, 1, viewWidth - 2, viewHeight - 2)
-      );
-      focusRect.strokeColor = new scope.Color(100 / 255, 150 / 255, 255 / 255);
-      focusRect.strokeWidth = 2;
-    }
+    bg.fillColor = CANVAS_BG;
 
     let xOffset = margin;
     let yOffset = margin;
@@ -156,7 +143,7 @@ class App extends React.Component {
             const path = new scope.Path(
               buildDotPathD(centerX, centerY, scaledWidth, scaledHeight, roundness, 0, rotationAngle)
             );
-            path.fillColor = foregroundColor;
+            path.fillColor = INK_COLOR;
           }
         }
       }
@@ -166,11 +153,14 @@ class App extends React.Component {
 
     // Draw blinking cursor if canvas is focused
     if (canvasFocused && showCursor) {
+      const glyphTop = yOffset - scaledHeight / 2;
+      const glyphBottom = yOffset + rowSpacing * 5 + scaledHeight / 2;
+      const cursorX = xOffset - Math.max(letterSpacing, 0) - Math.max((colSpacing - scaledWidth) / 2, 1);
       const cursorLine = new scope.Path.Line(
-        new scope.Point(xOffset, yOffset),
-        new scope.Point(xOffset, yOffset + rowSpacing * 6)
+        new scope.Point(cursorX, glyphTop),
+        new scope.Point(cursorX, glyphBottom)
       );
-      cursorLine.strokeColor = foregroundColor;
+      cursorLine.strokeColor = "#000000";
       cursorLine.strokeWidth = 0.5;
     }
   };
@@ -318,7 +308,7 @@ class App extends React.Component {
         }
       }
 
-      if (paths.length > 0) {
+      if (paths.length > 0 || char === " ") {
         glyphData[char] = { paths, layoutWidth, layoutHeight };
       }
     });
@@ -348,199 +338,59 @@ class App extends React.Component {
     }
   };
 
-  toggleSettingsPanel = () => {
-    this.setState({ settingsPanelOpen: !this.state.settingsPanelOpen });
-  };
-
-  handleColorChange = (colorType, value) => {
-    this.setState({
-      [colorType]: value.toUpperCase(),
-      ...(colorType === "foregroundColor" ? { hexEditFg: null } : {}),
-      ...(colorType === "backgroundColor" ? { hexEditBg: null } : {}),
-    });
-  };
-
-  normalizeHex6 = (input) => {
-    if (!input || typeof input !== "string") return null;
-    let t = input.trim();
-    if (t.startsWith("#")) t = t.slice(1);
-    t = t.replace(/[^0-9A-Fa-f]/g, "");
-    if (t.length === 3) {
-      t = t[0] + t[0] + t[1] + t[1] + t[2] + t[2];
-    }
-    if (t.length !== 6) return null;
-    return `#${t.toUpperCase()}`;
-  };
-
-  handleHexFocus = (draftKey, colorKey) => {
-    this.setState({ [draftKey]: this.state[colorKey] });
-  };
-
-  handleHexInputChange = (draftKey, colorKey, e) => {
-    let v = e.target.value.toUpperCase();
-    if (!v.startsWith("#")) v = `#${v.replace(/#/g, "")}`;
-    v = `#${v.slice(1).replace(/[^0-9A-F]/g, "").slice(0, 6)}`;
-    const n = this.normalizeHex6(v);
-    this.setState({
-      [draftKey]: v,
-      ...(n ? { [colorKey]: n } : {}),
-    });
-  };
-
-  handleHexBlur = (draftKey, colorKey) => {
-    const draft = this.state[draftKey];
-    const raw = draft != null ? draft : this.state[colorKey];
-    const next = this.normalizeHex6(raw) || this.state[colorKey];
-    this.setState({ [colorKey]: next, [draftKey]: null });
-  };
-
   render() {
-    const { settingsPanelOpen, foregroundColor, backgroundColor } = this.state;
+    const naming = buildFontNamesFromSettings({
+      circleWidth: this.state.circleWidth,
+      circleHeight: this.state.circleHeight,
+      shapeScale: this.state.shapeScale,
+      rotationAngle: this.state.rotationAngle,
+      roundness: this.state.roundness,
+      letterSpacing: this.state.letterSpacing,
+    });
 
     return (
       <div className="App">
         <div ref={this.myRef} />
 
-        {/* Settings Panel */}
-        <div className="settings-panel" data-open={settingsPanelOpen}>
-          <div className="settings-content">
-            {/* Header */}
-            <div className="settings-header">
-              <span className="settings-title">Settings</span>
-              <button
-                className="collapse-button"
-                onClick={this.toggleSettingsPanel}
-                aria-label="Toggle settings"
-                aria-expanded={settingsPanelOpen}
-                style={{ transform: settingsPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              >
-                <img src={caretIcon} alt="" width="12" height="12" />
-              </button>
-            </div>
+        <div className="bottom-chrome">
+          <p className="font-title-preview">{naming.filename.toUpperCase()}</p>
+          <div className="settings-panel">
+            <div className="settings-list">
+              {[
+                { label: "Width", property: "circleWidth", min: 5, max: 50 },
+                { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
+                { label: "Scale", property: "shapeScale", min: 0.5, max: 3, step: 0.1 },
+                { label: "Height", property: "circleHeight", min: 5, max: 50 },
+                { label: "Roundness", property: "roundness", min: 0, max: 100 },
+                { label: "Spacing", property: "letterSpacing", min: -50, max: 50 },
+              ].map(({ label, property, min, max, step = 1 }) => {
+                const value = this.state[property];
 
-            {/* Settings list (height via CSS grid 0fr/1fr) */}
-            <div className={`settings-body ${settingsPanelOpen ? 'open' : 'closed'}`}>
-              <div className="settings-body-inner">
-                <div className="settings-list">
-                  {[
-                    { label: "Width", property: "circleWidth", min: 5, max: 50 },
-                    { label: "Height", property: "circleHeight", min: 5, max: 50 },
-                    { label: "Scale", property: "shapeScale", min: 0.5, max: 3, step: 0.1 },
-                    { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
-                    { label: "Roundness", property: "roundness", min: 0, max: 100 },
-                    { label: "Spacing", property: "letterSpacing", min: -50, max: 50 },
-                  ].map(({ label, property, min, max, step = 1 }) => {
-                    const value = this.state[property];
-
-                    return (
-                      <div key={property} className="slider-container">
-                        <label className="slider-label" htmlFor={`slider-${property}`}>
-                          {label}
-                        </label>
-                        <SettingsSlider
-                          id={`slider-${property}`}
-                          min={min}
-                          max={max}
-                          step={step}
-                          value={value}
-                          onChange={(v) => this.handleSliderChange(property, v)}
-                        />
-                      </div>
-                    );
-                  })}
-
-                {/* Color Pickers */}
-                <div className="color-section">
-                  <span className="color-label">Colors</span>
-                  <div className="color-inputs">
-                    <div className="color-input">
-                      <div className="color-input-row">
-                        <span className="color-prefix">FG</span>
-                        <input
-                          type="text"
-                          className="color-value color-value-input"
-                          spellCheck={false}
-                          autoCapitalize="characters"
-                          aria-label="Foreground hex color"
-                          value={
-                            this.state.hexEditFg !== null
-                              ? this.state.hexEditFg
-                              : foregroundColor
-                          }
-                          onFocus={() => this.handleHexFocus("hexEditFg", "foregroundColor")}
-                          onChange={(e) =>
-                            this.handleHexInputChange("hexEditFg", "foregroundColor", e)
-                          }
-                          onBlur={() => this.handleHexBlur("hexEditFg", "foregroundColor")}
-                        />
-                      </div>
-                      <label className="color-swatch">
-                        <span
-                          className="color-swatch-fill"
-                          style={{ backgroundColor: foregroundColor }}
-                          aria-hidden
-                        />
-                        <input
-                          type="color"
-                          className="color-swatch-input"
-                          value={foregroundColor}
-                          onChange={(e) =>
-                            this.handleColorChange("foregroundColor", e.target.value)
-                          }
-                          aria-label="Foreground color picker"
-                        />
-                      </label>
-                    </div>
-                    <div className="color-input">
-                      <div className="color-input-row">
-                        <span className="color-prefix">BG</span>
-                        <input
-                          type="text"
-                          className="color-value color-value-input"
-                          spellCheck={false}
-                          autoCapitalize="characters"
-                          aria-label="Background hex color"
-                          value={
-                            this.state.hexEditBg !== null
-                              ? this.state.hexEditBg
-                              : backgroundColor
-                          }
-                          onFocus={() => this.handleHexFocus("hexEditBg", "backgroundColor")}
-                          onChange={(e) =>
-                            this.handleHexInputChange("hexEditBg", "backgroundColor", e)
-                          }
-                          onBlur={() => this.handleHexBlur("hexEditBg", "backgroundColor")}
-                        />
-                      </div>
-                      <label className="color-swatch">
-                        <span
-                          className="color-swatch-fill"
-                          style={{ backgroundColor: backgroundColor }}
-                          aria-hidden
-                        />
-                        <input
-                          type="color"
-                          className="color-swatch-input"
-                          value={backgroundColor}
-                          onChange={(e) =>
-                            this.handleColorChange("backgroundColor", e.target.value)
-                          }
-                          aria-label="Background color picker"
-                        />
-                      </label>
-                    </div>
+                return (
+                  <div key={property} className="slider-container">
+                    <label className="slider-label" htmlFor={`slider-${property}`}>
+                      {label}
+                    </label>
+                    <SettingsSlider
+                      id={`slider-${property}`}
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={value}
+                      onChange={(v) => this.handleSliderChange(property, v)}
+                    />
                   </div>
-                </div>
-                </div>
-
-                <button
-                  className="download-button"
-                  onClick={this.handleExport}
-                  disabled={!this.state.inputText.trim()}
-                >
-                  Download Font
-                </button>
-              </div>
+                );
+              })}
+            </div>
+            <div className="download-column">
+              <button
+                className="download-button"
+                onClick={this.handleExport}
+                disabled={!this.state.inputText.trim()}
+              >
+                Download Font
+              </button>
             </div>
           </div>
         </div>

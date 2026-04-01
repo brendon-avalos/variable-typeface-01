@@ -6,7 +6,7 @@ const MAX_POSTSCRIPT_NAME_LEN = 63;
 
 /**
  * Builds unique font names from UI settings so each export installs as its own family.
- * @param {object} settings - Export-relevant geometry (width, height, scale, rotation, roundness, spacing)
+ * @param {object} settings - Export-relevant geometry (width, height, scale, rotation, roundness)
  * @returns {{ fontFamily: string, fullName: string, postScriptName: string, filename: string }}
  */
 export function buildFontNamesFromSettings(settings) {
@@ -16,7 +16,6 @@ export function buildFontNamesFromSettings(settings) {
     shapeScale,
     rotationAngle,
     roundness,
-    letterSpacing,
   } = settings;
 
   const W = Math.round(circleWidth);
@@ -25,15 +24,13 @@ export function buildFontNamesFromSettings(settings) {
   const scaleDisplay = Number(Number(shapeScale).toFixed(1));
   const R = Math.round(rotationAngle);
   const Rn = Math.round(roundness);
-  const Sp = Math.round(letterSpacing);
-  const spSeg = Sp < 0 ? `n${Math.abs(Sp)}` : String(Sp);
 
-  const fontFamily = `Variable Typeface W${W} H${H} S${scaleDisplay} R${R} Rn${Rn} Sp${Sp}`;
+  const fontFamily = `Blip W${W} H${H} S${scaleDisplay} R${R} Rn${Rn}`;
   const styleName = 'Regular';
   const fullName = `${fontFamily} ${styleName}`;
 
   let postScriptName =
-    `VariableTypeface-W${W}-H${H}-S${S}-R${R}-Rn${Rn}-Sp${spSeg}`;
+    `Blip-W${W}-H${H}-S${S}-R${R}-Rn${Rn}`;
 
   if (postScriptName.length > MAX_POSTSCRIPT_NAME_LEN) {
     let h = 0;
@@ -41,7 +38,7 @@ export function buildFontNamesFromSettings(settings) {
       h = (h * 31 + postScriptName.charCodeAt(i)) >>> 0;
     }
     const short = (h >>> 0).toString(16).padStart(8, '0');
-    postScriptName = `VarTypeface-${short}`;
+    postScriptName = `Blip-${short}`;
   }
 
   const filenameBase = postScriptName.replace(/[^a-zA-Z0-9-]+/g, '-').toLowerCase();
@@ -61,7 +58,7 @@ export function buildFontNamesFromSettings(settings) {
  */
 export function generateTTF(glyphData, options = {}) {
   const {
-    fontFamily = 'Variable Typeface',
+    fontFamily = 'Blip',
     fontStyle = 'Regular',
     fullName,
     postScriptName,
@@ -222,7 +219,7 @@ export function generateTTF(glyphData, options = {}) {
  * @param {ArrayBuffer} fontBuffer - TTF font data
  * @param {string} filename - Filename for download
  */
-export function downloadTTF(fontBuffer, filename = 'variable-typeface.ttf') {
+export function downloadTTF(fontBuffer, filename = 'blip.ttf') {
   const blob = new Blob([fontBuffer], { type: 'font/ttf' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
