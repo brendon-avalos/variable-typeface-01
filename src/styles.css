@@ -35,7 +35,7 @@ body {
 canvas {
   display: block;
   margin: 0;
-  padding: 0;
+  padding: 0 0 64px 0;
 }
 
 .bottom-chrome {
@@ -73,7 +73,7 @@ canvas {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 12px;
+  column-gap: 16px;
   row-gap: 8px;
   height: fit-content;
 }
@@ -82,7 +82,7 @@ canvas {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
