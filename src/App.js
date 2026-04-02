@@ -421,10 +421,10 @@ class App extends React.Component {
             <div className="settings-list">
               {[
                 { label: "Width", property: "circleWidth", min: 5, max: 50 },
-                { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
-                { label: "Scale", property: "shapeScale", min: 0.5, max: 3, step: 0.1 },
                 { label: "Height", property: "circleHeight", min: 5, max: 50 },
+                { label: "Rotation", property: "rotationAngle", min: 0, max: 360 },
                 { label: "Roundness", property: "roundness", min: 0, max: 100 },
+                { label: "Scale", property: "shapeScale", min: 0.5, max: 3, step: 0.1 },
                 { label: "Spacing", property: "letterSpacing", min: -50, max: 50 },
               ].map(({ label, property, min, max, step = 1 }) => {
                 const value = this.state[property];
